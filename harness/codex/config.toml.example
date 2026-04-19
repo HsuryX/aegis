@@ -1,0 +1,20 @@
+# Codex CLI configuration example for aegis
+#
+# This file is intentionally left as commented-out placeholders. Copy it to
+# your Codex CLI configuration location (refer to the Codex CLI documentation
+# for the current path) and uncomment/adjust the fields you need.
+#
+# aegis does NOT require any specific Codex configuration to work —
+# Codex reads AGENTS.md natively at repo root. This file is provided only as
+# a starting point for users who want stricter defaults.
+
+# [profile.default]
+# model = "<your-preferred-model>"                # e.g., a current Codex-capable model ID
+# approval_policy = "on-request"                  # never | on-request | untrusted
+# sandbox = "workspace-write"                     # read-only | workspace-write | danger-full-access
+# instructions_file = "AGENTS.md"                 # explicit framework pointer
+
+# [profile.strict]
+# # Stricter profile for sensitive or production repositories
+# approval_policy = "untrusted"
+# sandbox = "read-only"

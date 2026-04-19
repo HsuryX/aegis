@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "_comment": "Edited by the human repository maintainer only. The agent is denied via the patterns below to prevent self-permission-grant. To change permissions, the maintainer edits this file directly; the agent MUST request the change through the Amendment Protocol in AGENTS.md.",
+  "includeGitInstructions": false,
+  "permissions": {
+    "deny": [
+      "Edit(./AGENTS.md)",
+      "Write(./AGENTS.md)",
+      "NotebookEdit(./AGENTS.md)",
+      "Edit(./CLAUDE.md)",
+      "Write(./CLAUDE.md)",
+      "NotebookEdit(./CLAUDE.md)",
+      "Edit(./playbooks/**)",
+      "Write(./playbooks/**)",
+      "NotebookEdit(./playbooks/**)",
+      "Edit(./CHANGELOG.md)",
+      "Write(./CHANGELOG.md)",
+      "Edit(./harness/claude-code/settings.json)",
+      "Write(./harness/claude-code/settings.json)",
+      "Edit(./_legacy/**)",
+      "Write(./_legacy/**)",
+      "NotebookEdit(./_legacy/**)",
+      "Edit(./.eslintrc*)",
+      "Edit(./biome.json)",
+      "Edit(./.prettierrc*)",
+      "Write(./.eslintrc*)",
+      "Write(./biome.json)",
+      "Write(./.prettierrc*)"
+    ],
+    "disableBypassPermissionsMode": "disable"
+  }
+}

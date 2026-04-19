@@ -1,0 +1,36 @@
+---
+description: Cross-phase principles for aegis — quality seeking, verification, autonomy, verdict discipline
+globs: "**/*"
+alwaysApply: true
+---
+
+# Cross-phase principles
+
+Canonical source: `playbooks/principles.md`. This rule file is a thin pointer — the playbook is the source of truth and MUST be regenerated from if rules change.
+
+## Load-bearing rules
+
+- **Verdict Discipline** — every existing element MUST receive an explicit verdict: `keep`, `keep-with-conditions`, `redesign`, or `delete`. A `keep-with-conditions` verdict MUST link to a `conditional` gap entry with a trigger. There MUST NOT be an implicit fifth state. Existence, age, test coverage, and downstream dependents MUST NOT be used as justification.
+- **Verification Coverage Matrix** — at every phase gate, record a 5-perspective matrix (Structural, Semantic, Adversarial, End-to-end, Cold read) with Exercised / Result / Evidence / Re-verified columns. Evidence cells MUST carry a verifiable reference (file:line, SHA-256 hash, session-log anchor, or subagent-output pointer); prose-only cells MUST fail the gate. Single-owner matrices complete in one pass; multi-agent/expert-staged matrices complete across sessions but gate HOLDS until all rows clean.
+- **Blameless framing** — lessons and failure patterns describe *system defects that allowed a failure*, not *agent errors*. The correct form is "the rule set permitted X, which produced Y; the rule SHOULD require Z" — not "the agent forgot to X". When the same lesson recurs in ≥ 2 sessions within a project, the agent MUST draft a `framework` gap amendment proposal.
+- **Multi-Agent Handoff** — when passing a phase between agents or teams, record an Exit Audit + Entry Acknowledgment in `.agent-state/phase.md` Handoff Context. See `AGENTS.md` Multi-Agent Handoff Protocol.
+- **Quality Seeking** — for significant decisions, the agent MUST generate at least 2 structurally different alternatives, argue against its own preference, and then decide. A decision with only one option is not a decision — it is an assumption.
+- **Authority Discipline** — one fact, one canonical owner. No derived artifact (cache, index, summary, convenience layer) MAY silently become authoritative.
+- **Verification over Confidence** — phrases like "I checked", "it looks fine", "should work", "probably correct" MUST NOT be used as verification evidence. Tool output is the only acceptable proof. See Completion Status Protocol in `playbooks/principles.md`.
+- **Completion Status Protocol** — when reporting status, the agent MUST use one of: `DONE`, `DONE_WITH_CONCERNS`, `NEEDS_CONTEXT`, `BLOCKED`. Each claim MUST carry specific evidence.
+- **Rationalization Prevention** — when the agent notices it is about to skip a rule, rationalize a shortcut, or defer work silently, it MUST STOP and treat the urge as evidence that a gap exists. See the Rationalization Prevention table in `playbooks/principles.md`.
+- **Root cause before fix** — when a test fails or a build breaks, the agent MUST investigate the root cause before attempting a fix. Band-aid patches that mask the underlying problem MUST NOT be applied.
+
+## Cross-phase rules the agent MUST NOT bypass
+
+- Phase gates block advancement until every criterion is met. Gates are thresholds, not targets to rush toward.
+- The Session Start Protocol MUST run at the start of every session. It verifies state integrity before any work begins.
+- Every significant decision MUST be recorded with at least 2 alternatives and a genuine comparison.
+- State files (`.agent-state/phase.md`, `audit.md`, `decisions.md`, `gaps.md`) MUST be updated before the session ends — this is the handoff mechanism between sessions.
+- Framework files (`AGENTS.md`, `playbooks/`) are read-only. Amendments follow the Amendment Protocol in `AGENTS.md`.
+
+## Scope awareness
+
+Each phase's rules are activated based on the current phase in `.agent-state/phase.md`. The phase-specific `.mdc` files (`phase-0.mdc`, `phase-1.mdc`, `phase-2.mdc`, `phase-3.mdc`) carry rules scoped to their phase. This file carries rules that apply everywhere.
+
+See the canonical `playbooks/principles.md` for the full rule set, multi-perspective verification protocol, prohibited shortcuts registry, and completion status definitions.

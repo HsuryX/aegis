@@ -1,0 +1,113 @@
+# aegis-verify.yml.example — reusable GitHub Actions workflow for aegis-governed projects.
+#
+# Mirrors the Verification Sequence defined in `playbooks/03-implement.md`:
+#   Build → Type check → Lint → Test → Security scan → validate.py → Placeholder scan
+#
+# HOW TO USE
+#   1. Copy this file to `.github/workflows/aegis-verify.yml` in the adopting project.
+#   2. Replace the placeholder step commands (marked `<...>`) with the project's actual
+#      build, typecheck, lint, and test commands. For example:
+#        <project build>      →  `npm ci && npm run build`
+#        <project typecheck>  →  `npm run typecheck`
+#        <project lint>       →  `npm run lint`
+#        <project test>       →  `npm test -- --coverage`
+#   3. If the project does not use a given step (e.g. no type checker), delete that step
+#      rather than leaving an empty placeholder — a no-op step adds noise without signal.
+#   4. Verify locally that `python3 validate.py` returns 0 before pushing the workflow.
+#
+# WHY THIS FILE SHIPS IN aegis
+#   `playbooks/automation.md` Principle 3 ("CI mirrors local verification") requires
+#   adopters to wire a CI job equivalent to the PostToolUse + Stop hooks that Claude
+#   Code runs locally. Codex and Cursor have no hook equivalent, so CI is the only
+#   mechanical check for agents that lack PostToolUse. This template provides the
+#   baseline so every adopter does not re-derive it from scratch.
+#
+# TRIGGER DESIGN
+#   - `pull_request`: catches regressions before merge — the primary gate.
+#   - `push` to `main`: catches direct pushes that bypass PR review.
+#   Projects with protected-branch settings SHOULD drop the `push` trigger.
+#
+# The workflow is designed to fail loudly. Every step runs even if an earlier one
+# fails (no `if: success()` gating) so a single PR surfaces all issues at once rather
+# than drip-feeding them across CI cycles.
+
+name: aegis verification
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  verify:
+    name: Verification Sequence
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # required for some secret-scanning tools
+
+      - name: Set up language runtime
+        # Replace with the adopter's language setup action:
+        # actions/setup-node@v4, actions/setup-python@v5, actions/setup-go@v5, etc.
+        # Delete this step entirely if no runtime setup is needed.
+        run: echo "<replace with language-specific setup>"
+
+      - name: Build
+        run: <project build>
+
+      - name: Type check
+        if: always()  # run even if Build failed — surface all errors in one run
+        run: <project typecheck>
+
+      - name: Lint
+        if: always()
+        run: <project lint>
+
+      - name: Test (with coverage)
+        if: always()
+        run: <project test>
+
+      - name: Secret scan
+        if: always()
+        # TruffleHog scans git history for leaked secrets. Alternatives: gitleaks,
+        # detect-secrets. aegis is agnostic about which tool; the only requirement is
+        # that committed secrets fail the build.
+        run: |
+          if command -v trufflehog >/dev/null 2>&1; then
+            trufflehog git file://. --no-update --fail
+          else
+            echo "::warning::trufflehog not installed — install in the runner or via Docker"
+          fi
+
+      - name: aegis validate
+        if: always()
+        # Runs the seven mechanical checks bundled with aegis. Fails the build on any
+        # framework-integrity violation (stale frontmatter, missing SCHEMA blocks,
+        # broken cross-references, version mismatch, non-verifiable Evidence cells).
+        run: python3 validate.py
+
+      - name: Placeholder scan
+        if: always()
+        # Enforces the Phase 3 gate rule that no `[NEEDS CLARIFICATION:`, `TBD`,
+        # `TODO`, `FIXME`, or `XXX` markers remain in authored artifacts. Playbook
+        # files are excluded because they document the marker convention itself.
+        run: |
+          HITS=$(grep -rnE '\[NEEDS CLARIFICATION:|\b(TBD|TODO|FIXME|XXX)\b' \
+                   specs/ .agent-state/audit.md .agent-state/decisions.md \
+                   .agent-state/gaps.md 2>/dev/null || true)
+          if [ -n "$HITS" ]; then
+            echo "$HITS"
+            echo "::error::Placeholders present — resolve before merge"
+            exit 1
+          fi
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## aegis verification summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Verification Sequence per playbooks/03-implement.md complete." >> $GITHUB_STEP_SUMMARY
+          echo "Any red step above blocks merge per playbooks/release-readiness.md." >> $GITHUB_STEP_SUMMARY

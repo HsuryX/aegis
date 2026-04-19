@@ -1,0 +1,70 @@
+---
+description: Code quality, testing, security, accessibility, performance, and dependency standards for aegis
+globs: "**/*"
+alwaysApply: true
+---
+
+# Quality standards
+
+Canonical source: `playbooks/standards.md`. This rule file is a thin pointer — the playbook is the source of truth and MUST be regenerated from if standards change.
+
+## Code quality (always)
+
+- Errors MUST be handled explicitly at every level; MUST NOT be silently swallowed
+- Input crossing a trust boundary MUST be validated before processing
+- Identifiers MUST be descriptive, consistent, and unambiguous; MUST match the canonical Naming Table
+- Functions SHOULD be under 50 lines; files SHOULD be under 800 lines; nesting SHOULD NOT exceed 4 levels
+- Comments SHOULD explain WHY only when not obvious from code; MUST NOT restate WHAT; stale comments MUST be removed
+- Constants, configuration, or environment variables MUST be used for anything that could change or carries semantic meaning
+- Resource cleanup MUST happen in all exit paths, including error paths
+- Code MUST NOT introduce O(n²) or worse complexity on user-controlled input sizes
+
+## Testing (mandatory for non-trivial projects)
+
+- Line coverage minimum: 80% (95% for paths crossing trust boundaries — authentication, authorization, payment, data mutation, secret handling)
+- **Test pyramid** (default, D-10 MAY override): 70% unit, 20% integration, 10% e2e
+- **Per-layer coverage** (not blended): unit ≥ 80%, integration ≥ 70%, e2e ≥ critical-flow count
+- TDD workflow default: failing test → minimal implementation → refactor
+- Tests MUST verify behavior described in specifications, not implementation details
+- Tests MUST be isolated (no shared mutable state, no execution-order dependency)
+- Every test MUST cite the `SC-{n}` or `FR-{n}` it validates (commit trailer, test-name suffix, or in-file comment)
+- Deterministic test data: factories, fixtures, or seeded generators; tests MUST NOT depend on production data or unseeded randomness
+- Every bug fix MUST include a test that reproduces the bug before the fix
+
+## Contract formats (cross-trust-boundary interfaces)
+
+- **REST APIs** → OpenAPI 3.1 (`openapi.yaml` or `openapi.json`)
+- **RPC / gRPC** → protobuf
+- **Event / streaming** → AsyncAPI 2.6
+- **Data validation** → JSON Schema 2020-12
+- **CLI** → machine-readable help or `--json` schema
+- Internal-only interfaces MAY record `schema: N/A — internal only` with justification
+
+## Accessibility testing (when UI is present)
+
+- Automated scans (axe-core / pa11y for web; platform-native linters for mobile/desktop) on every PR affecting UI code; MUST be blocking in CI
+- Manual screen-reader audit cadence declared in D-13+ Accessibility Model
+- Keyboard-only navigation + reduced-motion checks as part of the Verification Sequence
+- Assistive-technology target declared and testable
+
+## Security (MUST verify every applicable item before any commit)
+
+- No hardcoded secrets (API keys, passwords, tokens, certificates, private keys) — secrets MUST be referenced by name
+- No weak crypto (MD5, SHA1 for security, ECB mode, static IVs); current standards MUST be used
+- Parameterized queries only — no string concatenation in SQL
+- All user input validated and sanitized
+- CSRF protection on state-changing operations; rate limiting on public-facing endpoints
+- No PII or secrets in logs, error messages, or debug output
+- Error responses MUST NOT expose internal details, stack traces, or infrastructure information
+- Dependencies checked for known vulnerabilities; lockfile integrity verified
+- Prototype-polluting patterns MUST be avoided in object merging / deep cloning / query parameter parsing
+
+See `playbooks/standards.md` for the full 18-item security checklist with mechanical/judgment tags.
+
+## Scope and minimum bar
+
+These standards are the **minimum acceptable quality bar**, not the target. Thoroughness in every step prevents costly rework. Floors like "<50 lines" or "80% coverage" MUST be treated as floors — higher quality is pursued when the situation warrants it.
+
+## Self-review before every commit
+
+The Self-Review Checklist in `playbooks/standards.md` MUST pass before any code change is marked complete. For items that can be machine-verified, the agent MUST record actual command output as evidence and MUST NOT check items from memory.

@@ -1,0 +1,195 @@
+<!--
+SYNC-IMPACT
+- version: 0.0.0 → 1.0.0
+- bump: MAJOR
+- date: 2026-04-19
+- rationale: Initial release — establishes the v1.0.0 baseline for the aegis governance framework. All rules in AGENTS.md and playbooks/ are introduced at this version; subsequent releases follow the Amendment Protocol in AGENTS.md and the Versioning Policy in CHANGELOG.md.
+- downstream_review_required: []
+-->
+---
+id: playbooks/principles-gates
+title: Cross-Phase Principles — Gate-Scoped (Tier 1)
+version: 1.0.0
+last_reviewed: 2026-04-19
+applies_to:
+  - phase: all
+  - trigger: phase-gate, amendment, scope-classification
+severity: normative
+mechanical_items: 0
+judgment_items: 0
+mixed_items: 0
+references:
+  - AGENTS.md
+  - playbooks/principles.md
+  - playbooks/00-audit.md
+  - playbooks/01-design.md
+  - playbooks/02-spec.md
+  - playbooks/03-implement.md
+supersedes: null
+---
+
+# Cross-Phase Principles — Gate-Scoped (Tier 1)
+
+*Load when: evaluating a phase gate, preparing an amendment, or applying scope-proportional ceremony.*
+
+This file contains the portions of aegis's cross-phase principles that apply at specific junctures rather than every moment. The always-load Tier 0 core lives in [`principles.md`](./principles.md); Tier 2 triggered content lives in [`principles-conditional.md`](./principles-conditional.md).
+
+> **Terminology.** This file inherits the glossary from `principles.md` (terms: **artifact**, **canonical**, **gap**, **review**, **significant decision**, **verify**). Consult the glossary first when a rule reads ambiguously.
+
+## Multi-Perspective Verification
+
+At every phase gate, the agent MUST perform five-perspective verification before advancing. Each perspective MUST produce a clean result (zero findings), and the evidence MUST be recorded in the session log.
+
+**The five perspectives:**
+
+1. **Structural consistency** — cross-references, templates, formatting
+2. **Semantic precision** — every rule unambiguous and non-contradictory
+3. **Adversarial compliance** — can the rules be gamed while technically followed? For standard and large scope projects, this perspective MUST be executed via the Adversarial Review Protocol below — a fresh-context subagent delegated specifically to find `[NEEDS CLARIFICATION]` markers, vague prose, and completeness gaps. Self-checking this perspective in the main session is prone to blind spots; the fresh-context execution is the defense
+4. **End-to-end simulation** — walk through a realistic scenario step by step
+5. **Cold read** — re-read as if seeing it for the first time
+
+A gate passes only when all perspectives produce clean results. If a fix could affect a previously clean perspective, the agent MUST re-verify it before claiming closure. If a perspective finds zero issues, the agent SHOULD treat that as a signal to look harder. When multiple perspectives flag the same issue, the agent MUST escalate its severity.
+
+**Phase emphasis** — all five perspectives apply at every gate, but invest depth where it matters most: Phase 0 (Audit) and Phase 3 (Implement) emphasize structural consistency + cold read; Phase 1 (Design) emphasizes adversarial compliance + end-to-end simulation; Phase 2 (Spec) emphasizes semantic precision + end-to-end simulation.
+
+### Adversarial Review Protocol
+
+At every phase gate, the agent MUST run an adversarial review subagent in a fresh context before evaluating the gate's checklist. This review is distinct from the phase-specific reviews (audit review, design review, specification review, code review) defined in each phase playbook — those reviews validate **content fidelity** and correctness; adversarial review catches **completeness gaps** in prose that reads as complete but conceals unresolved questions.
+
+**When it runs:** before the agent checks off any gate item, at the end of every Phase N → N+1 transition, and pre-completion for spec-only projects (Phase 2 terminal).
+
+**Scope required by project scope classification** (see `00-audit.md` Project Scope Classification):
+- **micro / small**: adversarial review is RECOMMENDED (may skip for trivial internal tools; apply for anything customer-facing).
+- **standard**: adversarial review is REQUIRED for Phase 1 Design gate and Phase 2 Spec gate.
+- **large**: adversarial review is REQUIRED at every phase gate (Phase 0 Audit, Phase 1 Design, Phase 2 Spec, Phase 3 Implement).
+
+**Reviewer prompt (canonical):**
+
+> Read [files under review]. You are reviewing for completeness, not correctness — assume all claims are defensible in context. Your job: surface incomplete specifications, self-evaluated gates, vague scope, ambiguous thresholds, missing exception conditions, undefined terms, and prose that appears complete but hides unresolved questions. Apply both checks in sequence:
+>
+> **(1) Incompleteness** — for each reviewed section, mark every (a) `[NEEDS CLARIFICATION]` or equivalent placeholder, (b) rule with a subject or threshold that a new reader could interpret two ways, (c) rule that requires judgment calls without naming the judge.
+>
+> **(2) Exploitability (bad-faith read)** — for each normative rule, ask: can a motivated adversary comply with the letter while violating the spirit? Flag:
+>   (a) vague subject (who does this apply to?),
+>   (b) unstated scope (when does this apply? which artifacts?),
+>   (c) ambiguous threshold ("significant", "substantial", "appropriate" — unquantified),
+>   (d) missing exception condition (what releases the rule?),
+>   (e) self-evaluated gate (is the enforcer the same entity bound by the rule?).
+>
+> Report: a numbered list of findings with file:line, category ((1) incompleteness or (2) exploitability sub-letter), severity, and a one-sentence clarification request. Do NOT propose fixes — only surface the gaps. Under 500 words.
+
+**After the reviewer returns**, the agent MUST address every flagged finding before evaluating the gate. A finding addressed is a finding with a committed edit or a recorded `[J]` judgment-based decision to keep the text as-is with documented reasoning. Ignoring a finding or "deferring it to next phase" is NOT an acceptable resolution — the finding either becomes a committed change or an explicit, recorded decision.
+
+**`[J]` disposition justification classes.** A `[J]` judgment-based decision to keep the text as-is MUST cite exactly one of these three justification classes (without a justification class, the `[J]` is not a valid disposition and the finding remains unaddressed):
+
+1. **ALREADY_SPECIFIED** — the flagged gap is resolved elsewhere in the same release (cite `file.md:line` or `#anchor` of the resolving text). Use when the reviewer surfaced an apparent hole that in fact has coverage the reviewer missed.
+2. **OUT_OF_SCOPE_NG-n** — the flagged gap is a real issue but outside the current release's scope; a `G-{n}` gap MUST be filed in `.agent-state/gaps.md` with `Type: scope-reduction` and an explicit Trigger condition naming the release that will resolve it. Use when deferral is legitimate and tracked.
+3. **RISK_ACCEPTED_BY_USER** — the user has explicitly accepted the risk; the session log MUST contain a dated user confirmation line (e.g., `{YYYY-MM-DD} {HH:MM} UTC: User accepted risk on finding F-{n} per conversation at {timestamp}`). Use only when the risk has been surfaced to and acknowledged by the user.
+
+**Severity-matched escalation.** Any CRITICAL or HIGH adversarial finding resolved by `[J]` (not a committed edit) MUST use `RISK_ACCEPTED_BY_USER` — `ALREADY_SPECIFIED` and `OUT_OF_SCOPE_NG-n` are permitted only for MEDIUM or LOW findings. This prevents blanket-dismissal of severe findings via `[J]`.
+
+**Audit trail.** Every subagent dispatch producing findings MUST leave an archive artifact at `.agent-state/reviews/{date}-{topic}.md` per `.agent-state/reviews/README.md`. The dispositions (one row per finding, with the justification class and citation) SHOULD be recorded in that artifact's Disposition section, not only in the session log.
+
+### Verification Coverage Matrix
+
+At every phase gate, the agent MUST maintain a Verification Coverage Matrix in the session log recording which perspectives have been exercised and their results. The gate MUST NOT pass until all rows show `Exercised = yes` and `Result = clean`.
+
+| # | Perspective | Exercised | Result | Evidence | Re-verified after fixes |
+|---|------------|-----------|--------|----------|------------------------|
+| 1 | Structural consistency | yes / no | clean / N findings | session log ref | yes / no / N/A |
+| 2 | Semantic precision | yes / no | clean / N findings | session log ref | yes / no / N/A |
+| 3 | Adversarial compliance | yes / no | clean / N findings | subagent output ref | yes / no / N/A |
+| 4 | End-to-end simulation | yes / no | clean / N findings | session log ref | yes / no / N/A |
+| 5 | Cold read | yes / no | clean / N findings | session log ref | yes / no / N/A |
+
+The matrix SHOULD be completed in **one well-structured verification pass** when a single agent owns all five perspectives. When perspectives are owned by different experts or agents (e.g., the Adversarial perspective is delegated to a security subagent; the End-to-end simulation is exercised by a separate integration agent), the matrix MAY be filled across multiple sessions PROVIDED: (a) each row's `Exercised`, `Result`, and `Evidence` cells MUST be populated by the owning agent, (b) the session log MUST track which agent exercised which perspective with session dates, (c) the gate outcome MUST be `Hold` (not `advance`, not `regress`) until all five rows show `Result = clean`. The expert-staged path MUST NOT be used to paper over a single agent's incomplete work — if one agent attempts to own all five perspectives but fills them across multiple sessions, the gate MUST treat this as incomplete verification (Hold) regardless of session count. Multiple rounds are the exception (regression handling below), not the norm. If a project routinely requires 3+ rounds to achieve all-clean, the audit or design quality is insufficient — the agent SHOULD investigate root cause rather than continuing to iterate.
+
+**Evidence verifiability.** Every `Evidence` cell MUST contain a verifiable reference that RESOLVES to a real artifact. Permitted forms — each one backtick-quoted within the cell, followed optionally by prose context:
+
+1. **File line** — `file.md:N` where the file exists AND line N is within file length.
+2. **File anchor** — `file.md#anchor` where the file exists (anchor specificity is judgment).
+3. **SHA-256 commitment** — `sha256:hex` (64 hex chars); opaque content commitment for captured command output.
+4. **Session-log anchor** — `#session-YYYY-MM-DD-slug` where the slug appears as a Session-boundary line, heading, or literal anchor in `.agent-state/phase.md` or `.agent-state/phase-archive.md`.
+5. **Subagent-output reference** — `<subagent:NAME>` where a file `.agent-state/reviews/*-NAME.md` exists, containing the reviewer prompt, full output, and metadata per `.agent-state/reviews/README.md`.
+6. **Pending placeholder** — `(pending)` ONLY when the row's `Result` cell is also `pending`.
+
+A cell containing only prose (`verified`, `checked`, `clean`, etc.) or a shape-compliant-but-unresolvable reference (e.g., `<subagent:never-dispatched>` with no archive file, or `file.md:9999` beyond file length) is NOT verifiable and the gate MUST fail with `Hold`. `validate.py` check_7 enforces both shape AND resolution — a shape-only check is gameable by fabricated anchors, so the filesystem is the arbiter, not the cell's formatting. Each claim MUST be re-checkable by a cold reader, and each subagent review MUST leave an archive trail under `.agent-state/reviews/`.
+
+**Regression verification:** when any perspective produces findings and the agent applies fixes, the agent MUST re-exercise all 5 perspectives **scoped to the changed files** before re-evaluating the gate. If regression verification itself produces new findings (fix-induced regressions), the cycle repeats: fix → re-verify (scoped to new diff). The agent MUST count regression loops. At regression loop count 3 for the same gate, the agent MUST STOP and escalate per the Phase Regression Procedure in `AGENTS.md` — repeated fix-induced regressions indicate the fix strategy itself is flawed, not that the verification needs more passes.
+
+**Scope limit:** each perspective SHOULD be scoped to a manageable unit — the agent SHOULD NOT attempt to verify the entire project in one perspective pass if the project exceeds 2000 lines of authored text. For large projects, decompose verification by subsystem or surface and record per-subsystem results in the matrix. Empirical evidence from code review research (Cisco Systems, Cohen et al. 2006) shows defect detection quality degrades sharply beyond 200 units of change per review session and 90 minutes of continuous review.
+
+## Sync Impact Reports
+
+When the user approves a framework amendment (per the Amendment Protocol in `AGENTS.md`), the amended file MUST be prepended with a SYNC-IMPACT HTML comment. This comment serves two roles: (1) an audit trail of what changed and why, (2) a forward-pointer telling future session-start agents which downstream files require re-review.
+
+**Format** (canonical — the comment MUST be an HTML comment and MUST include all five fields below):
+
+```html
+<!--
+SYNC-IMPACT
+- version: {prior}.{prior}.{prior} → {new}.{new}.{new}
+- bump: MAJOR | MINOR | PATCH
+- date: {YYYY-MM-DD}
+- rationale: {one-paragraph explanation citing a `G-{n}` gap, a `failure-patterns.md` entry, an `L-{n}` lesson, a dated session-log incident, or cross-framework precedent per AGENTS.md Amendment Protocol step 3}
+- downstream_review_required:
+  - {path/to/derived/file.md — what paraphrase or enumeration needs re-review}
+  - (repeat one line per file, or leave the list empty if no derived files reference the changed content)
+-->
+```
+
+**Required fields** (a SYNC-IMPACT comment is malformed if any of these is missing):
+
+| Field | Format | Purpose |
+|---|---|---|
+| `version` | `X.Y.Z → A.B.C` | Prior and new canonical versions |
+| `bump` | `MAJOR` \| `MINOR` \| `PATCH` | Classification per `CHANGELOG.md` Versioning Policy |
+| `date` | `YYYY-MM-DD` | Amendment ship date |
+| `rationale` | ≥ 30 characters, cites precedent | Why this change is necessary (per Precedent Requirement) |
+| `downstream_review_required` | List of relative paths; empty list allowed | Files that paraphrase or enumerate the changed content |
+
+**Version bump classification** (one of MAJOR / MINOR / PATCH; see `CHANGELOG.md` Versioning Policy for full semantics):
+- **MAJOR** — a rule becomes stricter than any prior version, OR an existing rule is broken for downstream compliance
+- **MINOR** — a new rule is added, or an existing rule is relaxed, or the release touches ≥ 3 playbooks with coordinated integrity fixes / consolidations / enforcement-clarifying tightenings
+- **PATCH** — clarifications, typos, cross-reference corrections, no rule semantics change
+
+**Writer responsibilities** when creating or updating a SYNC-IMPACT comment:
+
+1. The writer MUST populate all REQUIRED fields before marking the amendment as complete.
+2. The `downstream_review_required` list MUST be generated by grep-based search for forward references to the changed content — every file that cites the old rule MUST be listed. The agent SHOULD use `grep -r '{changed concept}' playbooks/ AGENTS.md` as the mechanical starting point and SHOULD cross-check with the Terminology blocks in each playbook (a term defined or redefined in the amendment MUST trigger re-review of every file that references that term).
+3. The `rationale` field MUST cite either a `G-{n}` gap entry that drove the amendment, a named failure pattern from `failure-patterns.md`, or a one-sentence "scope expansion per user directive" when the amendment is part of a planned wave (such as this meta-improvement project).
+
+**Reader responsibilities** at session start (per `AGENTS.md` Session Start Protocol step 3):
+
+1. The agent MUST read the top of each framework file (`AGENTS.md`, `playbooks/*.md`) for SYNC-IMPACT comments.
+2. For each SYNC-IMPACT comment whose `date` is after the agent's last-read date of that file: the agent MUST treat the file as "changed since last session" and re-read it before proceeding.
+3. For each entry in `downstream_review_required` of such a comment: the agent MUST re-read the cited file before using its rules, even if the downstream file itself has no recent SYNC-IMPACT comment.
+4. The agent MUST record in the session log which files it re-read due to SYNC-IMPACT triggers so future sessions can trace the propagation.
+
+## Gate Outcome Vocabulary
+
+Every phase gate produces exactly one of five outcomes (named in this vocabulary for audit consistency). The agent MUST use these exact terms in the session log.
+
+| Outcome | Meaning | What happens next |
+|---------|---------|---|
+| **Go** | All `[must-meet]` items pass; all `[should-meet]` items pass or have documented justification; `[nice-to-have]` items logged. | Advance to next phase. Update `phase.md`: set new current phase, mark the previous gate as met with the date. |
+| **Conditional Go** | All `[must-meet]` items pass; one or more `[should-meet]` items fail but the failures are bounded and can be addressed during the next phase without degrading that phase's work. | Advance to next phase. Each unmet `[should-meet]` item MUST be recorded as a `conditional`-type gap entry in `gaps.md` with `Trigger condition: "before Phase {N+1} gate"`. The next phase gate MUST fail if any `conditional` gap from this advancement is unresolved. |
+| **Hold** | One or more `[must-meet]` items fail; the failures are specific and bounded. | Remain in current phase. The agent MUST list exactly which `[must-meet]` items fail and what is needed to resolve each. Resume gate evaluation when the items close. |
+| **Recycle** | `[must-meet]` items fail AND the failures indicate significant rework of the current phase's output — the output is structurally inadequate, not just incomplete. More severe than Hold. | Remain in current phase. The agent MUST record the recycle in the session log with what MUST be reworked and why the output is structurally inadequate. If the same gate recycles more than twice, the agent MUST escalate per the Phase Regression Procedure in `AGENTS.md`. |
+| **Kill** | The project is canceled. Terminal state. | Update `phase.md` with `Status: killed` and the reason. No further phase work. The user MUST authorize a Kill — the agent MUST NOT self-authorize project termination. |
+
+**Selecting the outcome:** the agent MUST NOT upgrade a `Hold` to a `Conditional Go` to advance faster. The distinction is load-bearing: `Conditional Go` means the unmet items are `[should-meet]` and can genuinely be addressed in the next phase; `Hold` means the unmet items are `[must-meet]` and MUST be resolved before advancement. When uncertain, `Hold` is the correct default — the Rationalization Prevention table's "The design is probably good enough to start coding" counter applies here.
+
+### Three-Tier Gate Criteria
+
+Every phase gate's criteria are classified into three tiers to make outcome selection deterministic:
+
+- **`[must-meet]`** — the item MUST pass for the gate to produce `Go` or `Conditional Go`. Failure produces `Hold` or `Recycle`. Items that protect safety, correctness, verdict discipline, authority discipline, or explicit user instructions belong here.
+- **`[should-meet]`** — the item SHOULD pass but the gate MAY produce `Conditional Go` when the failure is bounded and addressable in the next phase. Items that represent quality default behaviors with legitimate exceptions belong here.
+- **`[nice-to-have]`** — the item SHOULD be considered and its outcome logged, but it does NOT gate advancement. Items that represent elective enhancements, polish, or style alignment belong here.
+
+The tier classification is set when the gate is defined and MUST NOT be renegotiated at the gate — reclassifying a `[must-meet]` item to `[should-meet]` at gate time is the "goalpost move" anti-pattern (see Rationalization Prevention). If a tier is genuinely wrong, the agent MUST record a `framework` gap entry and propose the change via the Amendment Protocol in `AGENTS.md`.
+
+## Scope-Proportional Ceremony
+
+The per-tier protocol applicability matrix — which protocols apply at each scope tier (`micro` / `small` / `standard` / `large`) — lives in [`00-audit.md` Scope-Proportional Ceremony Matrix](./00-audit.md#scope-proportional-ceremony-matrix) (its canonical authority alongside the Project Scope Classification). The matrix is consulted at Phase 0 Strategy Decision and applied to every subsequent session. Tiers below `standard` are EXPLICITLY PERMITTED to skip or simplify the marked protocols.

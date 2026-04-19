@@ -1,0 +1,24 @@
+# Per-user Claude Code settings (project settings go in .claude/settings.json)
+.claude/settings.local.json
+
+# Per-user aegis overrides (per AGENTS.md Workspace Discipline — collaborator
+# personal experiments / local preferences MUST NOT modify shared AGENTS.md)
+AGENTS.local.md
+
+# Node.js (if hooks use Node.js)
+node_modules/
+
+# Python (validate.py cache)
+__pycache__/
+*.pyc
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+
+# Editor artifacts
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
