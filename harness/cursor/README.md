@@ -1,10 +1,20 @@
 # Cursor harness
 
-This directory contains Cursor-specific configuration for aegis. Cursor uses `.cursor/rules/*.mdc` files with YAML frontmatter as its rule mechanism, and the framework ships one `.mdc` file per playbook (see `.cursor/rules/`).
+This directory contains Cursor-specific guidance and rule templates for aegis. Read it together with the shared [`../capability-matrix.md`](../capability-matrix.md), which is the authoritative summary of what is active now vs merely shipped as a template.
+
+## What this repo wires now
+
+This repo does **not** currently activate Cursor rules at repo root. What ships today is:
+
+- advisory `.mdc` files under `harness/cursor/.cursor/rules/`
+- documentation explaining how to copy them into the real Cursor load path
+- manual / OS / git-hook / CI compensation guidance
+
+Until an adopter copies those files into repo-root `.cursor/rules/`, Cursor gets no aegis rule injection from this repo.
 
 ## What Cursor enforces natively
 
-- **`.mdc` rules with frontmatter.** Cursor reads `.cursor/rules/*.mdc` at session start and applies them based on `alwaysApply: true` (always loaded) or `globs` (loaded for matching file patterns). Rules become part of the agent's system prompt.
+- **Repo-root `.mdc` rules with frontmatter.** Cursor reads repo-root `.cursor/rules/*.mdc` at session start and applies them based on `alwaysApply: true` (always loaded) or `globs` (loaded for matching file patterns). Rules become part of the agent's system prompt.
 - **Cursor commands.** Cursor has its own command palette (Cmd/Ctrl+K) for agent instructions, independent of Claude Code's `/skill` mechanism.
 - **Inline code generation** with rule context. When the user invokes `Cmd+K` or accepts a suggestion, Cursor applies the active rules to shape the generation.
 - **`@file` and `@folder` references** in the chat to scope rule application manually.
@@ -12,78 +22,51 @@ This directory contains Cursor-specific configuration for aegis. Cursor uses `.c
 ## What Cursor cannot enforce
 
 - **No hook equivalent.** Cursor has no PreToolUse/PostToolUse blocking mechanism. Rules are advisory — the agent tries to follow them, but violations are not blocked at tool-execution time.
-- **No deny rules.** Cursor does not block writes to files based on pattern matching. Write protection for `AGENTS.md`, `playbooks/`, and `_legacy/` relies on OS-level `chmod` and user discipline.
-- **No skill commands analogous to Claude Code's `/{name}`.** The framework skills (`/verify`, `/decision`, `/gap`, `/audit-surface`, `/phase-status`) are documented in `harness/claude-code/skills/` with canonical behavior definitions; Cursor users MUST invoke the equivalent steps manually.
+- **No deny rules.** Cursor does not block writes to files based on pattern matching. Write protection for `AGENTS.md`, `CLAUDE.md`, `playbooks/`, and `_legacy/` relies on OS-level `chmod` and user discipline.
+- **No skill commands analogous to Claude Code's `/{name}`.** The framework skills (`/verify`, `/decision`, `/gap`, `/audit-surface`, `/phase-status`) are documented in `harness/claude-code/skills/` as Claude-specific adapter docs for canonical behavior owned elsewhere; Cursor users MUST invoke the equivalent steps manually.
 - **No SessionStart or Stop hooks.** The agent MUST self-execute the Session Start Protocol from `AGENTS.md` and MUST manually run the Verification Sequence at phase transitions.
+- **Rules must live at repo-root `.cursor/rules/`.** Files left under `harness/cursor/.cursor/rules/` are templates, not active Cursor configuration.
 
 ## How to compensate
 
-- **OS-level protection.** `chmod -R a-w AGENTS.md playbooks/` makes framework files read-only at the filesystem level.
-- **CI gates.** A CI job MUST run the formatter, linter, type checker, test suite, and verification greps. Without local hooks, CI is the only mechanical check.
-- **Pre-commit hooks via Git.** Use husky, lefthook, or similar to run verification before commits land.
-- **Manual `/verify`.** At phase boundaries, the agent MUST replicate the Verification Sequence steps (Build → Type check → Lint → Test → Security scan → Diff review) and record output in `phase.md`.
-- **Rule density over rule count.** Cursor caches rules in the system prompt — keep rule files lean (under ~150 lines each) to avoid prompt bloat. The framework's `.mdc` files deliberately reference the canonical playbooks rather than duplicating them in full.
+Universal backstops (OS `chmod`, git pre-commit hooks, CI workflow, manual Session Start Protocol, manual `python3 validate.py`) are documented once in [`../capability-matrix.md`](../capability-matrix.md). One Cursor-specific note: keep `.mdc` files lean (under ~150 lines each) — Cursor caches rules in the system prompt and the framework's templates deliberately reference canonical playbooks instead of duplicating them.
 
 ## Files in this harness
 
-- `.cursor/rules/principles.mdc` — cross-phase rules (mirrors `playbooks/principles.md`)
-- `.cursor/rules/standards.mdc` — code quality, testing, security, accessibility (mirrors `playbooks/standards.md`)
-- `.cursor/rules/phase-0.mdc` — Phase 0 Audit rules (mirrors `playbooks/00-audit.md`)
-- `.cursor/rules/phase-1.mdc` — Phase 1 Design rules (mirrors `playbooks/01-design.md`)
-- `.cursor/rules/phase-2.mdc` — Phase 2 Spec rules (mirrors `playbooks/02-spec.md`)
-- `.cursor/rules/phase-3.mdc` — Phase 3 Implement rules (mirrors `playbooks/03-implement.md`)
+- `harness/cursor/.cursor/rules/principles.mdc` — thin always-on cross-phase rules pointer (template; copy to repo-root `.cursor/rules/` to activate)
+- `harness/cursor/.cursor/rules/standards.mdc` — code quality, testing, security, accessibility (template)
+- `harness/cursor/.cursor/rules/phase-0.mdc` — Phase 0 Audit rules (template)
+- `harness/cursor/.cursor/rules/phase-1.mdc` — Phase 1 Design rules (template)
+- `harness/cursor/.cursor/rules/phase-2.mdc` — Phase 2 Spec rules (template)
+- `harness/cursor/.cursor/rules/phase-3.mdc` — Phase 3 Implement rules (template)
 - `README.md` — this file.
 
 ## Coverage scope
 
-The six `.mdc` files above intentionally cover only the always-on or per-phase rule sets. The remaining cross-phase reference playbooks (`glossary.md`, `identifiers.md`, `automation.md`, `zen.md`, `gaps.md`, `failure-patterns.md`, `release-readiness.md`) ship **without** matching `.mdc` pointers — Cursor's prompt budget rewards rule density over rule count, and these playbooks are consulted by reference from the active rule files rather than being permanently injected into every prompt. The agent reads them on demand from `playbooks/` when an active `.mdc` rule cites them.
+The six `.mdc` files above intentionally cover only the always-on or per-phase rule sets. Gate/amendment-scoped and triggered supplements (`principles-gates.md`, `principles-conditional.md`) are **not** default Cursor loads, and the remaining cross-phase reference playbooks (`glossary.md`, `identifiers.md`, `automation.md`, `zen.md`, `gaps.md`, `failure-patterns.md`, `release-readiness.md`) also ship **without** matching `.mdc` pointers — Cursor's prompt budget rewards rule density over rule count, and these playbooks are consulted by reference from the active rule files rather than being permanently injected into every prompt. The agent reads them on demand from `playbooks/` when an active `.mdc` rule cites them.
 
-This is a deliberate trade-off, not an oversight. If a Cursor user wants any of these reference playbooks to be always-loaded, they MAY add a project-local `.mdc` pointer (`alwaysApply: true` plus a one-line reference to the canonical playbook); such additions live in user-side configuration, not in this harness directory.
+This is a deliberate trade-off, not an oversight. If a Cursor user wants any of these reference playbooks to be always-loaded, they MAY add a project-local `.mdc` pointer (`alwaysApply: true` plus a one-line reference to the canonical playbook); such additions live at repo-root `.cursor/rules/`, not in the template directory under `harness/cursor/`.
 
 ## Rule generation
 
-Each `.mdc` file in `.cursor/rules/` is a thin pointer to its canonical playbook with YAML frontmatter that makes Cursor load it. The canonical source of truth is the playbook file under `playbooks/`; the `.mdc` files are derived and MUST be regenerated by hand whenever the corresponding playbook changes. There is no automated regeneration — when amending a playbook covered by an `.mdc` pointer, the author MUST update the matching `.mdc` file in the same change set so the Cursor harness does not drift from the canonical source.
+Each `.mdc` file in `harness/cursor/.cursor/rules/` is a thin pointer to its owning canonical playbook. To make Cursor load it, copy it to repo-root `.cursor/rules/`. The `.mdc` files are subordinate adapter docs and MUST be regenerated by hand whenever the corresponding canonical owner changes. There is no automated regeneration.
 
 ## Minimum Cursor version
 
-aegis requires Cursor with `.cursor/rules/` MDC rule support (Cursor 0.42 or later).
+aegis requires Cursor with repo-root `.cursor/rules/` MDC rule support (Cursor 0.42 or later).
 
 ## Setup checklist
 
-New project adoption — run these steps after copying aegis into the target repo. Cursor's `.cursor/rules/` mechanism is advisory (rules bias generation but do not block actions), so framework enforcement comes from CI + git hooks + OS-level chmod.
+After copying aegis into the target repo:
 
-### 1. File permissions
+1. **Universal backstops** — apply OS `chmod`, install git pre-commit hooks, install the CI workflow template. Same as every harness — see [`../capability-matrix.md`](../capability-matrix.md) for the canonical control table.
+2. **Copy the rule templates into Cursor's real load path.**
 
-```bash
-chmod +x tools/bootstrap.sh validate.py
-chmod -R a-w AGENTS.md playbooks/ CLAUDE.md
-```
+   ```bash
+   mkdir -p .cursor/rules
+   cp harness/cursor/.cursor/rules/*.mdc .cursor/rules/
+   ```
 
-OS-level read-only protection prevents framework-file edits regardless of which agent tries. Temporarily restore write permission only when the framework author intentionally amends.
-
-### 2. Verify `.cursor/rules/` files are present
-
-After `tools/bootstrap.sh`, confirm all six MDC files are in place:
-
-```bash
-ls .cursor/rules/ | sort
-# Expected: phase-0.mdc, phase-1.mdc, phase-2.mdc, phase-3.mdc, principles.mdc, standards.mdc
-```
-
-Cursor loads these automatically once the project opens. `principles.mdc` and `standards.mdc` are `alwaysApply: true`; the four phase files are per-phase `alwaysApply: false` — Cursor activates them when the agent references the corresponding phase or when the user attaches them to a chat.
-
-### 3. Git hooks
-
-The commit-msg + pre-commit hook scripts are identical across harnesses. See `harness/codex/README.md` § Setup checklist → Git hooks for the husky/lefthook/plain-git skeleton.
-
-### 4. CI gates
-
-Same as Codex — a CI job mirroring the Verification Sequence (Build → Type → Lint → Test → Secret scan → `validate.py` → placeholder scan). See `harness/codex/README.md` § CI gates for a GitHub Actions skeleton.
-
-### 5. Session-start discipline
-
-Cursor does not run hooks at session start. The agent MUST manually execute the Session Start Protocol from `AGENTS.md`. A good practice: add an `@rules` reference to `principles.mdc` at the start of every session, or pin it as an always-attached rule via the Cursor UI.
-
-### 6. Syncing `.cursor/rules/` when playbooks change
-
-When a playbook is amended, the matching `.mdc` file MUST be updated in the same change set (see Rule generation above). The canonical source is the playbook; the `.mdc` is derived. Cursor has no mechanism to regenerate `.mdc` files automatically — treat them like translated documentation and keep them aligned by hand.
+   Until this copy step happens, the rules remain templates and the capability matrix MUST treat Cursor as unwired. After copy, `principles.mdc` and `standards.mdc` activate via `alwaysApply: true`; treat the four phase files as manual per-phase references — attach explicitly when working in that phase, do not assume automatic activation.
+3. **Cursor-specific: session-start discipline.** Cursor has no SessionStart hook. Pin `@rules .cursor/rules/principles.mdc` at the start of every session, or attach it as an always-on rule via the Cursor UI, so the Session Start Protocol from `AGENTS.md` runs.
+4. **Cursor-specific: keep `.mdc` files in sync.** When a playbook is amended, update the matching template under `harness/cursor/.cursor/rules/` in the same change set, then re-copy to repo-root `.cursor/rules/`. The canonical source is the playbook; the `.mdc` is derived. There is no automated regeneration.

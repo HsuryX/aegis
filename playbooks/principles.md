@@ -1,16 +1,28 @@
 <!--
 SYNC-IMPACT
-- version: 0.0.0 → 1.0.0
-- bump: MAJOR
-- date: 2026-04-19
-- rationale: Initial release — establishes the v1.0.0 baseline for the aegis governance framework. All rules in AGENTS.md and playbooks/ are introduced at this version; subsequent releases follow the Amendment Protocol in AGENTS.md and the Versioning Policy in CHANGELOG.md.
-- downstream_review_required: []
+- version: 1.0.0 → 1.1.0
+- bump: MINOR
+- date: 2026-04-25
+- rationale: Framework refinement release. Adds the bounded-change 0 -> 3 path for already-governed work (`00-audit.md`); the harness security-claim model with explicit control-class (`Executable` / `Backstop` / `Advisory`) and activation-state (`Active now` / `Shipped but inactive` / `Not available here`) classification (`harness/capability-matrix.md`); the Canonical Dependency Edges DAG seeding the Whole-System Composition Check (`01-design.md`); the Adversarial Review Protocol Per-phase timing-hooks table (`principles-gates.md`); the Scope-Proportional gate-protocol mini-matrix (`principles-gates.md` Scope-Proportional Ceremony); the `phase regression` glossary entry; and `validate.py check_traceability` — a file-level `Implements:`/`Covers:` rollup (warning-only, vacuous on the framework repo itself). Extends Required Behaviors #7 with an archive-decay re-evaluation rule for consulted archive entries >= 12 months old (`principles.md`). Expands the existing Cold Read perspective with a concrete protocol (`principles-gates.md`). Adds a date-only UTC variant to the scope-reduction sign-off format for `micro`/`small` projects (`00-audit.md` ceremony matrix + `release-readiness.md` checklist); the full git-email anchored form remains for `standard`/`large`. Relaxes Session Start Protocol Step 3 — the integrity block now accepts any form that cites countable or tool-checkable evidence; the prior templated form is preserved as a reference example. Promotes the implementation-boundary rule to a dedicated `## Implementation Boundary` section in `AGENTS.md` (v1.0.0 carried the rule as a paragraph below the Phase Gates table); the new section's bounded-change summary paragraph points at `00-audit.md` for the full Bounded-Change Rule; surfaces additional Phase 1 gate items (Authority model, Whole-System Composition Check, threat-model applicability) and Phase 2 Proof-class declaration in the `AGENTS.md` Phase Gates table; decouples the Phase 1 threat-model gate from `specs/threat-model.md` artifact-existence (binds to whichever path D-5 declares); reformats the `AGENTS.md` Workspace Discipline second paragraph from a single run-on into a 6-bullet list (preserving v1.0.0 content and adding a Bash-subprocess-gap caveat); trims the scope-reduction marker phrase list (`validate.py` `_DEFERRAL_PHRASES`, mirrored in `standards.md` / `03-implement.md` / `harness/cursor/.cursor/rules/phase-3.mdc`) to unambiguous multi-word forms only, dropping false-positive-prone tokens. De-duplicates the Verdict Discipline definition (`AGENTS.md` is sole canonical owner; glossary holds a one-paragraph redirect); removes the four per-phase `## Adversarial Gate Check` stanzas (replaced by the new Per-phase timing-hooks table); removes the redundant placeholder grep at `02-spec.md` Quality Checks (the Phase Gate scan is a strict superset). Compresses Codex and Cursor harness READMEs by deferring universal-backstop guidance to `harness/capability-matrix.md`. Required Behaviors #8 grep formula relocates from `principles.md` body to `automation.md` Lessons-Gap Backstop. Removes the `validate.py` Verification Coverage Matrix anchor-diversity check; its enforcement contract is already covered by check 7 (evidence verifiability). SemVer MINOR — additive and refinement; no rule becomes stricter than v1.0.0 in a way that invalidates prior compliance.
+- downstream_review_required:
+  - README.md
+  - ONBOARDING.md
+  - CHANGELOG.md
+  - harness/capability-matrix.md
+  - harness/claude-code/README.md
+  - harness/codex/README.md
+  - harness/cursor/README.md
+  - harness/ci/README.md
+  - harness/claude-code/hooks-cookbook.md
+  - harness/claude-code/skills/phase-status/SKILL.md
+  - validate.py
+  - tools/bootstrap.sh
 -->
 ---
 id: playbooks/principles
 title: Cross-Phase Principles
-version: 1.0.0
-last_reviewed: 2026-04-19
+version: 1.1.0
+last_reviewed: 2026-04-25
 applies_to:
   - phase: all
 severity: normative
@@ -33,14 +45,15 @@ supersedes: null
 
 # Cross-Phase Principles
 
-These rules apply in every phase. Loaded via the Session Start Protocol.
+These rules apply in every phase. `AGENTS.md` is the thin operator kernel; this file is the always-load doctrine it points to.
 
-> **Three-file split.** Cross-phase principles are split across three files to bound session-start context load:
-> - **This file (`principles.md`)** — Tier 0 core, **always loaded**.
-> - [**`principles-gates.md`**](./principles-gates.md) — Tier 1, **load before each phase gate**, at amendments, or on scope-classification change. Contains Multi-Perspective Verification (+ Adversarial Review Protocol + Verification Coverage Matrix), Sync Impact Reports, Gate Outcome Vocabulary (+ Three-Tier Gate Criteria), Scope-Proportional Ceremony pointer.
-> - [**`principles-conditional.md`**](./principles-conditional.md) — Tier 2, **load on trigger**. Contains Context Budget (release measurement or mid-session overflow), Multi-Agent Coordination (when ≥ 2 agents active), Spirit = Letter (edge-case rule misfit).
+> **Load split.** aegis separates the always-on operator kernel from the deeper doctrine to bound session-start context load:
+> - **`AGENTS.md`** — thin operator kernel: Session Start Protocol, load map, phase boundaries, workspace discipline.
+> - **This file (`principles.md`)** — always-load cross-phase doctrine.
+> - [**`principles-gates.md`**](./principles-gates.md) — gate/amendment-scoped rigor. Contains Multi-Perspective Verification (+ Adversarial Review Protocol + Verification Coverage Matrix), Amendment Protocol, Sync Impact Reports, Gate Outcome Vocabulary (+ Three-Tier Gate Criteria), Scope-Proportional Ceremony pointer.
+> - [**`principles-conditional.md`**](./principles-conditional.md) — triggered coordination rules. Contains Context Budget, Multi-Agent Coordination, Multi-Agent Handoff Protocol, Spirit = Letter.
 >
-> The Session Start Protocol in `AGENTS.md` (steps 4, 4a, 4b) specifies when to load each file. Rules across all three carry equal normative weight; the split is a **loading optimization**.
+> The Session Start Protocol in `AGENTS.md` specifies when to load each layer. Rules across the kernel and supplements carry equal normative weight; the split is a **loading optimization**.
 
 > **Terminology.** This playbook uses terms defined in [`glossary.md`](./glossary.md): **artifact**, **canonical**, **gap**, **review**, **significant decision**, **verify**. When a rule reads ambiguously, check the glossary first.
 
@@ -66,11 +79,11 @@ A sentence without one of these keywords is non-normative — it is background, 
 - Known suboptimal but not forbidden patterns → **NOT RECOMMENDED**.
 - When uncertain between two neighboring levels, classify upward (SHOULD before MAY; MUST before SHOULD) — under-constraining costs more than over-constraining. **Caveat (RFC 2119 §6):** MUST is for interoperation or harm prevention, not methodological preference. If a rule is a strong convention rather than a hard requirement, classify it SHOULD with named exception conditions.
 
-**Bad-faith read test.** Normative rules SHOULD survive a hostile-reader pass before ship. The Adversarial Review Protocol's reviewer prompt applies this test at every phase gate and every amendment — see the explicit bullets (a)–(e) in that prompt below (vague subject, unstated scope, ambiguous threshold, missing exception condition, self-evaluated gate). Rules that fail the test MUST be rewritten or rejected.
+**Bad-faith read test.** Normative rules SHOULD survive a hostile-reader pass before ship. The Adversarial Review Protocol's reviewer prompt in [`principles-gates.md`](./principles-gates.md#adversarial-review-protocol) applies this test at every phase gate and every amendment — see the explicit bullets (a)–(e) there (vague subject, unstated scope, ambiguous threshold, missing exception condition, self-evaluated gate). Rules that fail the test MUST be rewritten or rejected.
 
 ## Rule Priority
 
-When two framework rules conflict, the agent MUST resolve the conflict by reading top-down in the table below (highest priority first). When two rules at the same priority level conflict, the agent MUST prefer the more specific rule over the more general one. The agent MUST record the conflict and chosen resolution in the session log in `phase.md`. The user governs the framework — an explicit user instruction (Priority 3) overrides any framework rule at a lower priority; deviations from framework rules under user direction MUST be recorded per the Amendment Protocol in `AGENTS.md`.
+When two framework rules conflict, the agent MUST resolve the conflict by reading top-down in the table below (highest priority first). When two rules at the same priority level conflict, the agent MUST prefer the more specific rule over the more general one. The agent MUST record the conflict and chosen resolution in the session log in `phase.md`. The user governs the framework — an explicit user instruction (Priority 3) overrides any framework rule at a lower priority; deviations from framework rules under user direction MUST be recorded per the Amendment Protocol in `principles-gates.md`.
 
 | # | Priority | Short form |
 |---|---|---|
@@ -108,7 +121,7 @@ A decision is significant if changing it later would require modifying more than
 - If the user's instruction is ambiguous, the agent SHOULD prefer the interpretation most consistent with existing design decisions
 - When multiple acceptable options exist and the difference is stylistic, the agent SHOULD choose the simpler one
 
-(Deviations under user instruction: see Rule Priority #3 and `AGENTS.md` Amendment Protocol step 6. Missing information: record in `gaps.md` per the Required Behaviors below. External-constraint trade-offs: record as an explicit decision per `01-design.md`.)
+(Deviations under user instruction: see Rule Priority #3 and `principles-gates.md` Amendment Protocol step 6. Missing information: record in `gaps.md` per the Required Behaviors below. External-constraint trade-offs: record as an explicit decision per `01-design.md`.)
 
 ## Context Awareness
 
@@ -129,6 +142,8 @@ When reporting the outcome of a task or implementation unit, the agent MUST use 
 - **NEEDS_CONTEXT** — missing information; states exactly what is needed to continue
 
 The agent MUST NOT use vague completion claims. The agent MUST NOT claim DONE without verification evidence. The following confidence-claim phrases are forbidden in completion reports and MUST NOT appear: "should work", "probably fine", "seems correct", "looks good" — these are confidence claims, not evidence. The following premature-closure phrases are also forbidden before verification is complete and MUST NOT appear: "Done!", "All set!", "Everything works!"
+
+These statuses are a reporting layer, not phase-gate outcomes. At a gate, the agent MUST report `Go`, `Conditional Go`, `Hold`, `Recycle`, or `Kill` separately per `principles-gates.md`; it MUST NOT substitute `DONE`, `DONE_WITH_CONCERNS`, `BLOCKED`, or `NEEDS_CONTEXT` for the gate outcome.
 
 ## Prohibited Shortcuts
 
@@ -179,7 +194,7 @@ Ordered by session lifecycle — start through end. The agent MUST:
 4. **Implementation traceability**: cite decision IDs (`D-{n}`) when implementing, and run the `standards.md` self-review checklist before marking any code change complete
 5. **Evidence before assertion**: verify any work before claiming it complete AND verify any feedback or suggestion (from user, reviewer, or subagent) before acting on it. In both cases the agent MUST paste the actual command output into the session-log Evidence field (or `.agent-state/phase.md` session entry) so the rule is falsifiable by third-party inspection. The agent MUST NOT agree performatively ("You're absolutely right!", "Great catch!") without verification
 6. **State-file hygiene**: update state files incrementally as work happens — when recording an audit entry, settling a decision, opening or resolving a gap, advancing a phase, ending a session, or before `/compact` or `/clear` — and archive resolved or completed entries to a corresponding `-archive.md` file when a state file (`decisions.md`, `gaps.md`, or the session log in `phase.md`) exceeds 300 lines. Keep only active items (`Draft` / `Proposed` / `Deferred` decisions, open gaps, current-phase session log), items newly `Accepted` or newly `Final` during the current or most recent phase, and the naming table in the active file
-7. **Archive consultation**: at session start, the agent MUST read each active state file's corresponding archive (`decisions-archive.md`, `gaps-archive.md`, `phase-archive.md`) when it exists (scope-scaled per the Scope-Proportional Ceremony Matrix in `00-audit.md`); when creating or revising any state-file entry at any point in the session, the agent MUST first read the corresponding archive to check for conflicts, precedents, or related prior work. Archived entries are historical truth; the agent MUST surface any contradiction to the user rather than silently overriding the archive
-8. **Lessons feedback loop**: record lessons learned in the session log before ending a session; at project completion (or incrementally at wave / phase boundaries) consolidate session-log lessons into `.agent-state/lessons.md` with monotonic `L-{n}` identifiers in system-framed form (see Rationalization Prevention → Blameless post-mortem framing). When the same lesson appears in ≥ 2 occurrences within this project, the agent MUST draft a `framework` gap entry in `gaps.md` proposing an amendment. When the same lesson appears in this project AND in at least one prior project's `lessons.md`, the agent MUST promote it to the Candidate Patterns section AND file the `framework` gap — cross-project recurrence is the strongest signal the rule set is incomplete. Use `YYYY-MM-DD` format for all dates in state files and decision entries. Mechanical check: let `L = grep -c '^### L-' .agent-state/lessons.md` and `F = grep -cE 'type: framework' .agent-state/gaps.md`. If `L − F > 5` (i.e., five or more lessons accumulated without any resulting framework-gap proposal), the Release Readiness gate MUST emit `Hold` until either (a) the agent drafts `framework` gaps for the recurring lesson patterns, or (b) the agent records an explicit `[J] — RISK_ACCEPTED_BY_USER` justification per `principles-gates.md` Adversarial Review Protocol citing user acceptance that the lessons do not indicate a framework defect. The concrete `L − F > 5` threshold is bounded and mechanically checkable — an unbounded "SHOULD approximately track" rule would be gameable by silent accumulation
+7. **Archive consultation**: at session start, the agent MUST read each active state file's corresponding archive (`decisions-archive.md`, `gaps-archive.md`, `phase-archive.md`) when it exists (scope-scaled per the Scope-Proportional Ceremony Matrix in `00-audit.md`); when creating or revising any state-file entry at any point in the session, the agent MUST first read the corresponding archive to check for conflicts, precedents, or related prior work. Archived entries are historical truth; the agent MUST surface any contradiction to the user rather than silently overriding the archive. **Archive-decay re-evaluation:** when the consulted archive entry is ≥ 12 months old AND the current session is creating or revising a state-file entry in the same domain (same surface for `decisions-archive`, same gap type for `gaps-archive`, same phase for `phase-archive`), the agent SHOULD verify whether the archive's stated **Context**, **Confirmation mechanism**, **Trigger condition**, or **Resolution path** (whichever fields the archive entry populated) still applies to the project's current state. "Still applies" means each cited premise can be re-confirmed today by re-running the original Confirmation mechanism (for decisions) or by re-reading the related current-state files (for gaps and phase entries). If any cited premise can no longer be re-confirmed, the agent MUST record (a) a one-line margin note in the **new** entry citing the archived ID and the failed premise in one sentence, and (b) a session-log entry in `phase.md` recording the re-evaluation with the archived ID and outcome. The agent MUST NOT edit the archive — archives are historical truth, not a working surface (see #6 archival rule). The carve-out for skipping decay re-evaluation is closed (not "e.g."), limited to exactly two cases: (i) the archived entry's **Status** is `Rejected` or its archived disposition is `Kill` (decisions whose conclusion is invariant by design), OR (ii) the new entry neither references nor depends on the archived entry's substance (the new entry can be written and verified without consulting the archived premise). The "trivial edit" rationale alone is NOT sufficient — the test is dependence, not edit size. Skipping under either case MUST be recorded as a `deviation` gap with a one-line justification naming which case applies and an expiry condition tied to the next archive read
+8. **Lessons feedback loop**: record lessons learned in the session log before ending a session; at project completion (or incrementally at wave / phase boundaries) consolidate session-log lessons into `.agent-state/lessons.md` with monotonic `L-{n}` identifiers in system-framed form (see Rationalization Prevention → Blameless post-mortem framing). When the same lesson appears in ≥ 2 occurrences within this project, the agent MUST draft a `framework` gap entry in `gaps.md` proposing an amendment. When the same lesson appears in this project AND in at least one prior project's `lessons.md`, the agent MUST promote it to the Candidate Patterns section AND file the `framework` gap — cross-project recurrence is the strongest signal the rule set is incomplete. Use `YYYY-MM-DD` format for all dates in state files and decision entries. Backstop: when accumulated `L-{n}` lessons exceed open `framework`-type gaps by more than 5, the Release Readiness gate MUST emit `Hold` until the agent either drafts `framework` gaps for the recurring patterns, or records an explicit `[J] — RISK_ACCEPTED_BY_USER` justification per `principles-gates.md` Adversarial Review Protocol. The mechanical grep formula and exit-code semantics live in `playbooks/automation.md` Lessons-Gap Backstop
 
 (Phase regression when discovering gaps during implementation: follow the Phase Regression Procedure in `AGENTS.md`.)

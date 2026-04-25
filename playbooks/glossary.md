@@ -1,16 +1,28 @@
 <!--
 SYNC-IMPACT
-- version: 0.0.0 → 1.0.0
-- bump: MAJOR
-- date: 2026-04-19
-- rationale: Initial release — establishes the v1.0.0 baseline for the aegis governance framework. All rules in AGENTS.md and playbooks/ are introduced at this version; subsequent releases follow the Amendment Protocol in AGENTS.md and the Versioning Policy in CHANGELOG.md.
-- downstream_review_required: []
+- version: 1.0.0 → 1.1.0
+- bump: MINOR
+- date: 2026-04-25
+- rationale: Framework refinement release. Adds the bounded-change 0 -> 3 path for already-governed work (`00-audit.md`); the harness security-claim model with explicit control-class (`Executable` / `Backstop` / `Advisory`) and activation-state (`Active now` / `Shipped but inactive` / `Not available here`) classification (`harness/capability-matrix.md`); the Canonical Dependency Edges DAG seeding the Whole-System Composition Check (`01-design.md`); the Adversarial Review Protocol Per-phase timing-hooks table (`principles-gates.md`); the Scope-Proportional gate-protocol mini-matrix (`principles-gates.md` Scope-Proportional Ceremony); the `phase regression` glossary entry; and `validate.py check_traceability` — a file-level `Implements:`/`Covers:` rollup (warning-only, vacuous on the framework repo itself). Extends Required Behaviors #7 with an archive-decay re-evaluation rule for consulted archive entries >= 12 months old (`principles.md`). Expands the existing Cold Read perspective with a concrete protocol (`principles-gates.md`). Adds a date-only UTC variant to the scope-reduction sign-off format for `micro`/`small` projects (`00-audit.md` ceremony matrix + `release-readiness.md` checklist); the full git-email anchored form remains for `standard`/`large`. Relaxes Session Start Protocol Step 3 — the integrity block now accepts any form that cites countable or tool-checkable evidence; the prior templated form is preserved as a reference example. Promotes the implementation-boundary rule to a dedicated `## Implementation Boundary` section in `AGENTS.md` (v1.0.0 carried the rule as a paragraph below the Phase Gates table); the new section's bounded-change summary paragraph points at `00-audit.md` for the full Bounded-Change Rule; surfaces additional Phase 1 gate items (Authority model, Whole-System Composition Check, threat-model applicability) and Phase 2 Proof-class declaration in the `AGENTS.md` Phase Gates table; decouples the Phase 1 threat-model gate from `specs/threat-model.md` artifact-existence (binds to whichever path D-5 declares); reformats the `AGENTS.md` Workspace Discipline second paragraph from a single run-on into a 6-bullet list (preserving v1.0.0 content and adding a Bash-subprocess-gap caveat); trims the scope-reduction marker phrase list (`validate.py` `_DEFERRAL_PHRASES`, mirrored in `standards.md` / `03-implement.md` / `harness/cursor/.cursor/rules/phase-3.mdc`) to unambiguous multi-word forms only, dropping false-positive-prone tokens. De-duplicates the Verdict Discipline definition (`AGENTS.md` is sole canonical owner; glossary holds a one-paragraph redirect); removes the four per-phase `## Adversarial Gate Check` stanzas (replaced by the new Per-phase timing-hooks table); removes the redundant placeholder grep at `02-spec.md` Quality Checks (the Phase Gate scan is a strict superset). Compresses Codex and Cursor harness READMEs by deferring universal-backstop guidance to `harness/capability-matrix.md`. Required Behaviors #8 grep formula relocates from `principles.md` body to `automation.md` Lessons-Gap Backstop. Removes the `validate.py` Verification Coverage Matrix anchor-diversity check; its enforcement contract is already covered by check 7 (evidence verifiability). SemVer MINOR — additive and refinement; no rule becomes stricter than v1.0.0 in a way that invalidates prior compliance.
+- downstream_review_required:
+  - README.md
+  - ONBOARDING.md
+  - CHANGELOG.md
+  - harness/capability-matrix.md
+  - harness/claude-code/README.md
+  - harness/codex/README.md
+  - harness/cursor/README.md
+  - harness/ci/README.md
+  - harness/claude-code/hooks-cookbook.md
+  - harness/claude-code/skills/phase-status/SKILL.md
+  - validate.py
+  - tools/bootstrap.sh
 -->
 ---
 id: playbooks/glossary
 title: Glossary
-version: 1.0.0
-last_reviewed: 2026-04-19
+version: 1.1.0
+last_reviewed: 2026-04-25
 applies_to:
   - phase: all
 severity: reference
@@ -34,13 +46,13 @@ This file is non-normative — it defines meaning, not rules. Rules live in the 
 
 ## artifact
 
-Any file produced or managed by the framework. The set includes: audit entries in `audit.md`, decision entries in `decisions.md`, gap entries in `gaps.md`, specifications under `specs/`, session log entries in `phase.md`, code, commits, and the playbooks themselves. When a rule says "every artifact MUST trace to a decision", it applies to every item in this list except the framework files (which trace to amendments per the Amendment Protocol instead of to project decisions).
+Any file produced or managed by the framework: audit entries in `audit.md`, decisions in `decisions.md`, gaps in `gaps.md`, specifications (typically under `specs/` when present), session log entries in `phase.md`, code, commits, and the playbooks themselves. When a rule says "every artifact MUST trace to a decision", it applies to every item except the framework files (which trace to amendments per the Amendment Protocol instead of to project decisions).
 
 See also: **contract**, **spec**.
 
 ## authority model
 
-The architectural answer to "who owns truth for each domain concept" — the required Design phase decision D-2 in `01-design.md`. For every durable concept in the system, the authority model identifies exactly one subsystem or spec as the canonical owner. Other components MUST consult that owner rather than maintaining their own copy of the truth.
+The architectural answer to "who owns truth for each domain concept" — the required Design phase decision D-2 in `01-design.md`. For every durable concept in the system, the authority model identifies exactly one subsystem, audit surface, or spec as the canonical owner. Other components MUST consult that owner rather than maintaining their own copy of the truth.
 
 A missing or ambiguous authority model is a **structural problem**: it leads to duplicate truth, silent divergence between copies, and the "ghost authority" failure pattern where a derived artifact (cache, index, summary, convenience layer) drifts into being treated as canonical. The authority model is the precondition for the `AGENTS.md` Authority Discipline rule ("one fact, one canonical owner"). The Whole-System Composition Check in `01-design.md` mechanically verifies that no two subsystems claim authority over the same concept.
 
@@ -65,13 +77,19 @@ Common mistake: calling an entire spec document "the contract". Use "spec" or "s
 - **Prose contract** — the `Contract` section in the spec written in markdown. Describes invariants in English with MUST/SHOULD/MAY force. Primary audience: human reviewers and the agent during implementation.
 - **Machine-readable contract** — a structured artifact in one of the canonical forms enumerated in `standards.md` Contract Formats (the sole canonical list — this entry does not re-enumerate to avoid duplicate truth). Machines validate requests and responses against it. Primary audience: tooling, test generators, and consumers. Required for any cross-trust-boundary interface per `02-spec.md` Spec Section Structure → Machine-readable Contract. Internal-only interfaces MAY record `schema: N/A — internal only` with a one-line justification.
 
-Both forms MUST agree. The prose contract is authoritative for intent; the machine-readable contract is authoritative for format. A conflict between them is a `framework-gap`-level defect and MUST halt the spec gate until resolved.
+Both forms MUST agree. The prose contract is authoritative for intent; the machine-readable contract is authoritative for format. A conflict between them is a defect that MUST halt the spec gate until resolved and be tracked as a gap entry; if the conflict reflects a framework rule problem rather than a local spec error, that gap's type is `framework`.
 
 See **spec** for the enclosing document.
 
+## cycle completion
+
+Terminal completion in `steady-state` lifecycle mode. It means the current change/governance cycle has satisfied its terminal-phase gate and housekeeping; it does **not** mean the product is forever done. After cycle completion, the next material work item restarts at Phase 0.
+
+See **lifecycle mode**, **steady-state**, `02-spec.md` Terminal Phase, and `03-implement.md` Post-Completion Housekeeping.
+
 ## decision
 
-A resolved architectural or design choice recorded in `.agent-state/decisions.md` with a `D-{n}` identifier. A decision represents **resolved information** — distinct from a **gap**, which represents unresolved information. The `D-1..D-12` range is reserved for the Required Decisions enumerated in `01-design.md`; `D-13+` are project-specific additions. Decisions move through the lifecycle states `Draft` → `Proposed` → `Accepted` → `Final` (or `Rejected` / `Deferred` as terminal branches); only `Accepted` or `Final` decisions constrain subsequent phases.
+A resolved architectural or design choice recorded in `.agent-state/decisions.md` with a `D-{n}` identifier. A decision represents **resolved information** — distinct from a **gap**, which represents unresolved information. The `D-1..D-12` range is reserved for the Required Decisions enumerated in `01-design.md`; `D-13+` are project-specific additions. Decisions move through the lifecycle states `Draft` → `Proposed` → `Accepted` → `Final` (or to `Rejected`, or to `Deferred` pending a later return to `Draft` or `Rejected`); only `Accepted` or `Final` decisions constrain subsequent phases.
 
 See `01-design.md` Required Decisions for the canonical enumeration and Decision Lifecycle for state transitions, and `identifiers.md` for the `D-{n}` identifier rules. Distinct from **significant decision** below, which defines when Quality Seeking's full alternatives analysis is required.
 
@@ -80,7 +98,7 @@ See `01-design.md` Required Decisions for the canonical enumeration and Decision
 A logically coherent subset of the total product scope that can traverse the design-spec-implement phase sequence **independently** while respecting shared cross-cutting decisions. Slices MUST be large enough to produce a verifiable outcome on their own and small enough to design without global context. The Decomposition Rule in `01-design.md` governs when feature-sliced delivery applies; each slice carries its own per-phase status in `.agent-state/phase.md` Feature Slices section, and each slice MUST read and respect decisions in `Accepted` or `Final` state from other slices before proceeding.
 
 Feature slices are distinct from:
-- **Subsystems** (`01-design.md` Whole-System Composition Check) — subsystems are structural partitions of the final system; slices are temporal partitions of the delivery sequence.
+- **Subsystems** (`01-design.md` Whole-System Composition Check) — subsystems are structural partitions of the current canonical system; slices are temporal partitions of the delivery sequence.
 - **Phases** (`AGENTS.md` Phase Gates) — phases are framework-wide stages; slices are scope-bounded instances that each traverse the phases.
 - **Spikes** (`01-design.md` Prototyping Protocol) — spikes are time-bounded evidence-gathering exercises; slices are permanent scope partitions.
 
@@ -88,21 +106,21 @@ Feature slices are distinct from:
 
 A **phase gate** — the threshold that MUST be met before the agent advances from one phase to the next. Defined for each phase in `AGENTS.md` Phase Gates and operationalized in each phase playbook's Phase Gate section. A gate's items are tagged `[M]` (mechanical), `[J]` (judgment), or `[M+J]` (mixed) and classified into three tiers: `[must-meet]`, `[should-meet]`, `[nice-to-have]`.
 
-Evaluating a gate produces exactly one of five outcomes defined in `principles.md` Gate Outcome Vocabulary:
+Evaluating a gate produces exactly one of five outcomes defined in `principles-gates.md` Gate Outcome Vocabulary:
 
 - **Go** — all `[must-meet]` items met; advance
-- **Conditional Go** — all `[must-meet]` met; one or more `[should-meet]` deferred with a recorded `conditional`-type gap (not `scope-reduction`) and trigger `"before Phase {N+1} gate"` per `principles-gates.md` Gate Outcome Vocabulary
+- **Conditional Go** — all `[must-meet]` items pass; one or more `[should-meet]` items fail but the failures are bounded and can be addressed during the next phase without degrading that phase's work. Each unmet `[should-meet]` item is recorded as a `conditional` gap with `Trigger condition: "before Phase {N+1} gate"` per `principles-gates.md` Gate Outcome Vocabulary
 - **Hold** — at least one `[must-meet]` item unmet; remain in the phase and work toward meeting it
-- **Recycle** — a `[must-meet]` item fails in a way that indicates **structural rework** of an earlier phase; the agent MUST regress to the prior phase per `AGENTS.md` Phase Regression Procedure and re-enter it rather than re-running the current gate. Distinguish from `Hold` (same-phase rework, no regression needed) per `principles-gates.md` Gate Outcome Vocabulary
-- **Kill** — the project or slice cannot be completed under current constraints; escalate to the user
+- **Recycle** — `[must-meet]` items fail AND the failures indicate significant rework of the current phase's output; the output is structurally inadequate, not just incomplete. The project remains in the current phase, the recycle is recorded in the session log, and repeated recycles escalate per `AGENTS.md` Phase Regression Procedure. Distinguish from `Hold` (specific bounded failures, still same phase) per `principles-gates.md` Gate Outcome Vocabulary
+- **Kill** — terminal cancellation of the project or slice; no further phase work, and the user MUST authorize the termination
 
-Gates are thresholds, not targets (see `zen.md` aphorism #20). Bypassing a `[must-meet]` item without recording a `Conditional Go` + gap is a gate that was gamed, not met (see `zen.md` aphorism #12).
+Gates are thresholds, not targets (see `zen.md` aphorism #20). `Conditional Go` is available only when all `[must-meet]` items already pass; using it to bypass, relabel, or paper over a failing `[must-meet]` item is a gamed gate, not a met one (see `zen.md` aphorism #12).
 
 Distinct from **verdict**: gate outcomes apply to a phase as a whole; verdicts apply to individual audit items.
 
 ### Adversarial Gate Check
 
-A fresh-context review subagent run inside each phase playbook immediately before its phase gate per `principles-gates.md` Adversarial Review Protocol; REQUIRED for `standard` and `large` scope, OPTIONAL for `micro` and `small`. Distinct from the phase gate itself — the Adversarial Gate Check produces the completeness and bad-faith-reader evidence that the phase gate then evaluates against `[must-meet]` / `[should-meet]` / `[nice-to-have]` criteria.
+A fresh-context review subagent run before each phase gate per `principles-gates.md` Adversarial Review Protocol (canonical owner of the protocol AND the per-phase timing hooks table); REQUIRED for `standard` and `large` scope, OPTIONAL for `micro` and `small`. Distinct from the phase gate itself — the Adversarial Gate Check produces the completeness and bad-faith-reader evidence that the phase gate then evaluates against `[must-meet]` / `[should-meet]` / `[nice-to-have]` criteria.
 
 ## gap
 
@@ -110,40 +128,42 @@ Missing, unclear, or blocking information tracked in `gaps.md`. A gap represents
 
 Each gap has:
 - **Severity**: `critical` (blocks phase advancement) or `non-critical` (tracked but permits advancement)
-- **Type**: `evidence` (spike needed), `analysis` (deeper thinking needed), `decision` (new decision required), `framework` (framework rule is wrong), `deviation` (agreed departure from a rule with explicit expiry), `conditional` (condition on a `keep-with-conditions` verdict), `scope-reduction` (explicit tracked deferral of a requirement), `failure-pattern` (named anti-pattern detected), or `grandfathered` (pre-adoption artifact preserved under explicit expiry). Canonical taxonomy of 9 types is defined in `playbooks/gaps.md` — see it for the full table with resolution rules.
+- **Type**: `evidence` (spike needed), `analysis` (deeper thinking needed), `decision` (new decision required), `framework` (framework rule is wrong), `deviation` (framework-rule exception with explicit expiry), `conditional` (verdict/gate carry-forward obligation), `scope-reduction` (explicit tracked deferral of a requirement), `failure-pattern` (named anti-pattern detected), or `grandfathered` (pre-adoption artifact preserved under explicit expiry). There is no separate `accepted-risk` type; residual-risk prose MUST point to a real `G-{n}` entry of one of these types. Canonical taxonomy of 9 types is defined in `playbooks/gaps.md` — see it for the full table with resolution rules.
 
 When in doubt about whether information is a gap, the framework treats it as one — false positives cost less than false negatives.
 
-See [`gaps.md`](./gaps.md) for the full gap playbook (type taxonomy, lifecycle, resolution rules, phase-gate interaction), `.agent-state/gaps.md` for the working entry template, and `AGENTS.md` Amendment Protocol for the amendment and deviation flows.
+See [`gaps.md`](./gaps.md) for the full gap playbook (type taxonomy, lifecycle, resolution rules, phase-gate interaction), `.agent-state/gaps.md` for the working entry template, and `playbooks/principles-gates.md` Amendment Protocol for the amendment and deviation flows.
 
 ## harness
 
 The agent-specific adapter layer — hooks, permissions, skills, settings, and any other agent-idiosyncratic configuration. Distinct from the **agent-neutral playbooks**, which describe what the framework requires without assuming a specific coding agent.
 
-aegis ships three harnesses under `harness/<agent>/`:
+aegis ships three harnesses (Claude Code, Codex, Cursor) plus a CI harness, all under `harness/`. The shipped vs. active state of each harness, the canonical control table, and adoption pointers live in [`harness/capability-matrix.md`](../harness/capability-matrix.md). Per-harness setup details live in each harness's README.
 
-- **Claude Code** at `harness/claude-code/` — `settings.json`, `hooks-cookbook.md` (Claude-Code-specific implementation cookbook), `skills/` (five skills: `/verify`, `/decision`, `/gap`, `/audit-surface`, `/phase-status`), and `README.md`.
-- **Codex** at `harness/codex/` — `README.md` (explains what Codex enforces natively via its AGENTS.md reading and what it cannot enforce) and `config.toml.example`. Codex has no hook mechanism; compensation is via OS-level `chmod`, CI gates, and agent self-discipline.
-- **Cursor** at `harness/cursor/` — `README.md` and `.cursor/rules/*.mdc` rule files (principles, standards, phase-0..3). Cursor rules are advisory — the agent MUST self-regulate via them. The `.mdc` files are thin pointers to the canonical playbooks under `playbooks/` and MUST be regenerated if the playbooks change.
+See also `automation.md` for agent-neutral automation principles.
 
-See `harness/claude-code/hooks-cookbook.md` for the Claude Code harness configuration and `automation.md` for the agent-neutral automation principles.
+## lifecycle mode
+
+A Phase 0 strategy choice recorded in `.agent-state/audit.md` and `.agent-state/phase.md` that defines what terminal completion means. The two canonical values are:
+
+- **finite-delivery** — terminal completion means a bounded project or slice is complete until new scope is explicitly opened.
+- **steady-state** — terminal completion means only the current cycle is complete; future work re-enters at Phase 0.
+
+Lifecycle mode does not add a fifth phase and does not relax audit/design/spec/implementation rigor. It changes terminal semantics only.
+
+## phase regression
+
+A backwards transition from a later phase to an earlier one when new evidence invalidates the prior phase's work — for example, Phase 3 implementation reveals a missing decision and the project regresses to Phase 1. Canonical owner: `AGENTS.md` Phase Regression. Repeated regressions (more than twice from the same phase, or more than three total in one session) escalate to status BLOCKED awaiting user direction.
+
+Distinct from a **phase gate Hold** (the project remains in the current phase pending bounded fixes) and from a **Recycle** (current-phase output is structurally inadequate but does not reset to an earlier phase).
 
 ## review
 
-**Human-checked** or **separate-agent-checked in a fresh context.** Produces a rendered judgment with rationale.
+**Human-checked** or **separate-agent-checked in a fresh context.** Produces a rendered judgment with rationale. Distinct from **verify** (tool-checked) and **validate** (requirements-checked).
 
-Review is distinct from the other two judgment terms in the framework:
-- **verify** is tool-checked (mechanical, command-output evidence)
-- **validate** is requirements-checked (does it satisfy the product requirement?)
-- **review** is human/separate-agent-checked (is the artifact well-constructed and fit for purpose?)
+A review MUST be performed by someone other than the artifact's author. For standard/large scope, review uses a separate agent invoked in a fresh context; for micro/small scope, self-review against the current phase playbook's Quality Checks is sufficient with the scope classification recorded as justification.
 
-A review MUST be performed by a reviewer who did not produce the artifact under review — the reviewer MUST NOT be biased by having created it. For standard and large scope projects, review is performed by a separate agent invoked in a fresh context. For micro and small scope projects, self-review against the current phase playbook's Quality Checks section is sufficient, and the author MUST record the scope classification as justification.
-
-The framework defines four distinct reviews:
-- **Code review** (`03-implement.md`) — checks implementation against spec and standards
-- **Specification review** (`02-spec.md`) — checks a spec for ambiguity, contradiction, and fidelity to traced decisions
-- **Design review** (`01-design.md` Whole-System Composition Check) — checks the interaction of all `Accepted` or `Final` decisions
-- **Audit review** (`00-audit.md` Quality Checks) — checks the completeness and depth of the surface audit entries
+The framework defines four reviews: **Code review** (`03-implement.md`), **Specification review** (`02-spec.md`), **Design review** (`01-design.md` Whole-System Composition Check), and **Audit review** (`00-audit.md` Quality Checks).
 
 ## significant concern
 
@@ -151,7 +171,7 @@ A problem or task item that meets ANY of the following: (a) would require its ow
 
 Trivial task items — formatting a single file, renaming a local variable, responding to a single lint warning, updating one date stamp — are NOT significant concerns. Architectural choices, security reviews, cross-file refactors, new framework amendments, new subsystems, new integrations, and migrations ARE significant concerns.
 
-Used in `AGENTS.md` Session Start Protocol step 9 to trigger the kitchen-sink-session scope guard: a session whose opening prompt spans more than one phase transition OR combines a phase transition with more than one significant concern MUST propose session sequencing before beginning work. Without this definition, step 9 could be gamed by downscoping the concern label.
+Used in `AGENTS.md` Session Start Protocol step 8 to trigger the kitchen-sink-session scope guard: a session whose opening prompt spans more than one phase transition OR combines a phase transition with more than one significant concern MUST propose session sequencing before beginning work. Without this definition, step 8 could be gamed by downscoping the concern label.
 
 See `gaps.md` Severity Criteria for criterion (b); `00-audit.md` Per-Surface Entry Format for criterion (c); `significant decision` below for criterion (a).
 
@@ -165,17 +185,21 @@ See `principles.md` Quality Seeking for the full rule.
 
 ## spec / specification
 
-A canonical, test-derivable description of what the final system does, for one public interface or one subsystem surface. Specs own product truth per Authority Discipline (see `AGENTS.md`).
+A canonical, test-derivable description of what the current canonical system does for one public interface or one subsystem surface. Specs own contract truth and conformance truth per Authority Discipline (see `AGENTS.md`); product boundary, product goals, product non-goals, and product success criteria live in the Product surface of `audit.md`.
 
 A spec contains one or more **contract** sections (interfaces and their invariants), plus Scope, Definitions, Error semantics, Security considerations, and Conformance criteria sections. Specs describe what the system does, not how it does it — implementation-level detail belongs in code, not in specs.
 
 See `02-spec.md` for the full spec format, rules, and quality checks.
 
+## steady-state
+
+A lifecycle mode for long-lived repositories that expect recurring change/governance cycles rather than one forever-final endpoint. The same four phases and the same gates still apply; only terminal semantics differ. Release Readiness runs only for cycles that actually ship.
+
+See **lifecycle mode** and **cycle completion**.
+
 ## STRIDE
 
-A threat classification taxonomy used by the security threat model. The six categories — **S**poofing, **T**ampering, **R**epudiation, **I**nformation disclosure, **D**enial of service, **E**levation of privilege — map systematically across trust boundaries so no common threat class is overlooked. Defined with examples and applicability rules in `security-threat-model.md` § STRIDE Overview. Referenced normatively in Phase 1 design (D-5 Security model) when the project handles secrets, user data, or cross-trust-boundary communication.
-
-See `security-threat-model.md` for the full taxonomy and `01-design.md` Required Decisions D-5 for when STRIDE matrix population is required.
+The threat classification taxonomy (Spoofing, Tampering, Repudiation, Information disclosure, Denial of service, Elevation of privilege) used by the security threat model. Canonical owner: `security-threat-model.md` § STRIDE Overview, including applicability rules and examples. Referenced from `01-design.md` Required Decisions D-5 when any `security-threat-model.md` applicability condition is true.
 
 ## structural problem
 
@@ -191,7 +215,7 @@ In Phase 0 audit, the "top 3 highest-risk structural problems" recorded in `gaps
 
 A Phase 0 audit category. There are seven surfaces, ordered by the constraint chain — earlier surfaces constrain later ones:
 
-1. **Product** — boundary, scope, goals, non-goals
+1. **Product** — boundary, scope, goals, product success criteria, non-goals
 2. **Architecture** — subsystems, dependency direction, public contracts, data model, versioning
 3. **Runtime** — behavior, state, errors, recovery, configuration
 4. **Operations** — build, CI/CD, deployment, observability
@@ -238,26 +262,17 @@ The Per-Task Attempt Limit (`03-implement.md`) applies **per unit**: if a single
 
 ## validate
 
-**Requirements-checked.** Asks: "does this satisfy the requirement?" May involve judgment (e.g., "does this UI match the product's definition of good?") or product validation at completion ("does the implemented system address the Product surface goals and success criteria from the audit?").
+**Requirements-checked.** Asks: "does this satisfy the requirement?" May involve judgment (e.g., "does this UI match the product's definition of good?") or product validation at completion ("does the implemented system address the Product surface goals, `PSC-{n}` product success criteria, and `NG-{n}` product non-goals from the audit?").
 
 Distinct from:
 - **verify** — tool-checked, produces mechanical evidence
 - **review** — human or separate-agent judgment on the artifact's construction
 
-Validation is the terminal check: tools verify the code, reviewers review the artifact, and validation confirms the requirement is met. In `03-implement.md` Project Completion Criteria, item 9 is a validation check: the agent walks through each Product surface goal and confirms it is met, explicitly deferred, or renegotiated with the user.
+Validation is the terminal check: tools verify the code, reviewers review the artifact, and validation confirms the requirement is met. In `03-implement.md` Phase 3 Completion Criteria, item 9 is a validation check: the agent walks through each Product surface goal and confirms it is met, explicitly deferred, or renegotiated with the user.
 
 ## verdict
 
-The disposition assigned to every existing element during `00-audit.md` Phase 0. Every existing element starts as **not accepted** and enters the canonical system only after explicit review with exactly one of four verdicts:
-
-- **keep** — correct in both substance AND form; adopted as-is with zero structural changes
-- **keep-with-conditions** — correct in substance, but requires specific follow-up work to be adopted as-is. Every condition MUST be recorded as a `conditional` gap in `gaps.md` with an explicit trigger; the next phase gate MUST fail if any condition is unresolved when its trigger fires. This verdict MUST NOT be used as a softer `keep` — conditions are mandatory, tracked, and auditable, and an unmet condition reverts the verdict to `redesign`
-- **redesign** — addresses a valid need but in the wrong form; MUST be redesigned from first principles
-- **delete** — does not belong in the final system; MUST be removed
-
-There MUST NOT be an implicit fifth state. Existence, age, test coverage, and downstream dependents MUST NOT be used as justification for a verdict.
-
-The full semantics live in `AGENTS.md` Verdict Discipline; verdicts are recorded in `.agent-state/audit.md` per the Per-Surface Entry Format defined in `00-audit.md`. Green-field projects with no existing element to audit MAY omit the Verdict field and record scope classification as the justification in the session log.
+The disposition assigned to every existing element during `00-audit.md` Phase 0. Canonical owner: `AGENTS.md` Verdict Discipline (defines the four verdicts `keep` / `keep-with-conditions` / `redesign` / `delete` and the prohibition on a fifth state). Verdicts are recorded in `.agent-state/audit.md` per the Per-Surface Entry Format defined in `00-audit.md`. Green-field projects with no existing element to audit MAY omit the Verdict field and record scope classification as the justification in the session log.
 
 Distinct from **review** (a separate check on the author's work product) and from **gate** (a phase-level disposition, not an element-level one).
 

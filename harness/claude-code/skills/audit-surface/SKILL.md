@@ -11,7 +11,7 @@ Creates a new audit surface entry in `.agent-state/audit.md` following the Per-S
 
 The framework audits seven surfaces, ordered by the constraint chain — earlier surfaces constrain later ones:
 
-1. **Product** — boundary, scope, goals, non-goals (REQUIRES `SC-{n}` and `NG-{n}` labels per `playbooks/identifiers.md`)
+1. **Product** — boundary, scope, goals, product success criteria, non-goals (REQUIRES `PSC-{n}` and `NG-{n}` labels per `playbooks/identifiers.md`)
 2. **Architecture** — subsystems, dependency direction, public contracts, data model, versioning
 3. **Runtime** — behavior, state, errors, recovery, configuration
 4. **Operations** — build, CI/CD, deployment, observability
@@ -51,7 +51,7 @@ If the scope is uncertain, the framework prefers over-auditing to under-auditing
 
 ## Label references (Product surface only)
 
-- `SC-{n}` — product success criteria (testable, binary pass/fail)
+- `PSC-{n}` — product success criteria (auditable, binary pass/fail)
 - `NG-{n}` — product non-goals (explicit exclusions to prevent silent scope creep)
 
-These labels are mirrored in spec files under `specs/` during Phase 2.
+These labels remain canonical in `audit.md`. During Phase 2, specs define `SC-{n}` conformance criteria and MAY reference audit-owned `NG-{n}` labels where relevant.

@@ -1,16 +1,28 @@
 <!--
 SYNC-IMPACT
-- version: 0.0.0 → 1.0.0
-- bump: MAJOR
-- date: 2026-04-19
-- rationale: Initial release — establishes the v1.0.0 baseline for the aegis governance framework. All rules in AGENTS.md and playbooks/ are introduced at this version; subsequent releases follow the Amendment Protocol in AGENTS.md and the Versioning Policy in CHANGELOG.md.
-- downstream_review_required: []
+- version: 1.0.0 → 1.1.0
+- bump: MINOR
+- date: 2026-04-25
+- rationale: Framework refinement release. Adds the bounded-change 0 -> 3 path for already-governed work (`00-audit.md`); the harness security-claim model with explicit control-class (`Executable` / `Backstop` / `Advisory`) and activation-state (`Active now` / `Shipped but inactive` / `Not available here`) classification (`harness/capability-matrix.md`); the Canonical Dependency Edges DAG seeding the Whole-System Composition Check (`01-design.md`); the Adversarial Review Protocol Per-phase timing-hooks table (`principles-gates.md`); the Scope-Proportional gate-protocol mini-matrix (`principles-gates.md` Scope-Proportional Ceremony); the `phase regression` glossary entry; and `validate.py check_traceability` — a file-level `Implements:`/`Covers:` rollup (warning-only, vacuous on the framework repo itself). Extends Required Behaviors #7 with an archive-decay re-evaluation rule for consulted archive entries >= 12 months old (`principles.md`). Expands the existing Cold Read perspective with a concrete protocol (`principles-gates.md`). Adds a date-only UTC variant to the scope-reduction sign-off format for `micro`/`small` projects (`00-audit.md` ceremony matrix + `release-readiness.md` checklist); the full git-email anchored form remains for `standard`/`large`. Relaxes Session Start Protocol Step 3 — the integrity block now accepts any form that cites countable or tool-checkable evidence; the prior templated form is preserved as a reference example. Promotes the implementation-boundary rule to a dedicated `## Implementation Boundary` section in `AGENTS.md` (v1.0.0 carried the rule as a paragraph below the Phase Gates table); the new section's bounded-change summary paragraph points at `00-audit.md` for the full Bounded-Change Rule; surfaces additional Phase 1 gate items (Authority model, Whole-System Composition Check, threat-model applicability) and Phase 2 Proof-class declaration in the `AGENTS.md` Phase Gates table; decouples the Phase 1 threat-model gate from `specs/threat-model.md` artifact-existence (binds to whichever path D-5 declares); reformats the `AGENTS.md` Workspace Discipline second paragraph from a single run-on into a 6-bullet list (preserving v1.0.0 content and adding a Bash-subprocess-gap caveat); trims the scope-reduction marker phrase list (`validate.py` `_DEFERRAL_PHRASES`, mirrored in `standards.md` / `03-implement.md` / `harness/cursor/.cursor/rules/phase-3.mdc`) to unambiguous multi-word forms only, dropping false-positive-prone tokens. De-duplicates the Verdict Discipline definition (`AGENTS.md` is sole canonical owner; glossary holds a one-paragraph redirect); removes the four per-phase `## Adversarial Gate Check` stanzas (replaced by the new Per-phase timing-hooks table); removes the redundant placeholder grep at `02-spec.md` Quality Checks (the Phase Gate scan is a strict superset). Compresses Codex and Cursor harness READMEs by deferring universal-backstop guidance to `harness/capability-matrix.md`. Required Behaviors #8 grep formula relocates from `principles.md` body to `automation.md` Lessons-Gap Backstop. Removes the `validate.py` Verification Coverage Matrix anchor-diversity check; its enforcement contract is already covered by check 7 (evidence verifiability). SemVer MINOR — additive and refinement; no rule becomes stricter than v1.0.0 in a way that invalidates prior compliance.
+- downstream_review_required:
+  - README.md
+  - ONBOARDING.md
+  - CHANGELOG.md
+  - harness/capability-matrix.md
+  - harness/claude-code/README.md
+  - harness/codex/README.md
+  - harness/cursor/README.md
+  - harness/ci/README.md
+  - harness/claude-code/hooks-cookbook.md
+  - harness/claude-code/skills/phase-status/SKILL.md
+  - validate.py
+  - tools/bootstrap.sh
 -->
 ---
 id: playbooks/standards
 title: Quality Standards
-version: 1.0.0
-last_reviewed: 2026-04-19
+version: 1.1.0
+last_reviewed: 2026-04-25
 applies_to:
   - phase: 2-spec
   - phase: 3-implement
@@ -71,7 +83,7 @@ When the language or framework has an established idiomatic ordering convention,
 
 ## Testing
 
-- **Coverage target**: the default metric is **line coverage**, and projects MUST meet a minimum of 80% line coverage. Paths crossing trust boundaries (authentication, authorization, payment, data mutation, secret handling) MUST meet 95% line coverage minimum. In addition, **security-critical paths** (authentication, authorization, payment, secret handling) SHOULD target **≥70% branch coverage** on top of the line-coverage requirement — branch coverage catches untested conditional paths that line coverage misses (e.g., the `else` branch of an `if` that rarely fires, or the exception path of a `try` that is exercised only under adversarial input). **Enforcement:** an unmet line-coverage target (80% default or 95% trust-boundary) blocks Phase 3 gate advancement via the Project Completion Criteria `[M]` coverage item in `03-implement.md`. An unmet branch-coverage SHOULD target fails the Self-Review checklist and MUST be recorded either as a resolved gap (code extended to pass) or as a tracked `scope-reduction` gap entry per the Hard Rule 3 explicit-deferral path. The test strategy decision (D-10) MAY override either target with a project-specific bar when justified — for example, a project with formally-verified authentication code MAY set a lower empirical coverage target, and a project with no security-critical paths MAY omit the branch-coverage requirement entirely. Coverage-target overrides are user-facing quality commitments: the agent MUST propose any override to the user before adopting it, MUST NOT self-authorize, and MUST record the approved override in the D-10 decision entry with explicit justification and the user approval date
+- **Coverage target**: the default metric is **line coverage**, and projects MUST meet a minimum of 80% line coverage. Paths crossing trust boundaries (authentication, authorization, payment, data mutation, secret handling) MUST meet 95% line coverage minimum. In addition, **security-critical paths** (authentication, authorization, payment, secret handling) SHOULD target **≥70% branch coverage** on top of the line-coverage requirement — branch coverage catches untested conditional paths that line coverage misses (e.g., the `else` branch of an `if` that rarely fires, or the exception path of a `try` that is exercised only under adversarial input). **Enforcement:** an unmet line-coverage target (80% default or 95% trust-boundary) blocks Phase 3 gate advancement via the Phase 3 Completion Criteria `[M]` coverage item in `03-implement.md`. An unmet branch-coverage SHOULD target fails the Self-Review checklist and MUST be either fixed or called out explicitly in the gate/release-readiness judgment; it MUST NOT be recast as `scope-reduction` unless an actual specified requirement is being deferred. The test strategy decision (D-10) MAY override either target with a project-specific bar when justified — for example, a project with formally-verified authentication code MAY set a lower empirical coverage target, and a project with no security-critical paths MAY omit the branch-coverage requirement entirely. Coverage-target overrides are user-facing quality commitments: the agent MUST propose any override to the user before adopting it, MUST NOT self-authorize, and MUST record the approved override in the D-10 decision entry with explicit justification and the user approval date
 - **TDD workflow** (default; the test strategy decision D-10 MAY adopt a different workflow with justification): the agent SHOULD write a failing test → write minimal implementation to pass → refactor. If a test is difficult to write, that signals a design problem — the agent MUST refactor for testability rather than skipping the test
 - **Test types** (all REQUIRED for non-trivial projects): unit (functions, components), integration (APIs, data access, service boundaries), E2E (critical user flows)
 - **Test quality**: tests MUST verify behavior described in specifications, not implementation details. Tests MUST be isolated (no shared mutable state, no execution-order dependency). Each test MUST have a clear assertion about one behavior
@@ -180,6 +192,7 @@ Projects with no user-facing interface MAY record the Accessibility Model as `ac
 
 ## Dependency Discipline
 
+- Projects SHOULD use the latest stable release (LTS where applicable) and SHOULD leverage newer platform features when they improve clarity, safety, or performance. Deprecated APIs or patterns MUST NOT be used when supported replacements exist
 - Each external dependency MUST be justified: what it provides that would be costly to build and maintain
 - Projects SHOULD prefer well-maintained libraries with active communities over abandoned or niche packages
 - Production dependency versions MUST be pinned explicitly; floating ranges MUST NOT be used in production dependencies; lock files MUST be committed for reproducible builds
@@ -201,7 +214,7 @@ Ordered by severity: security → correctness → quality → completeness. The 
 - [ ] **[M]** Functions focused, under 50 lines. Mechanical: line-count scan of changed functions.
 - [ ] **[M]** Files cohesive, under 800 lines. Mechanical: `wc -l` on changed files.
 - [ ] **[M]** Automated formatters, linters, and type checkers pass when configured in the project. Mechanical: formatter/linter/type-checker exit 0.
-- [ ] **[M+J]** No silent scope reduction — every requirement from the traced specification MUST be present in the code OR explicitly deferred via a `gaps.md` entry of type `scope-reduction` per `03-implement.md` Hard Rule 3. Prohibited scope-reduction marker phrases ("v1", "simplified version", "static for now", "placeholder", "defer to follow-up", "good enough for now") MUST NOT appear unless each occurrence is tracked in a gap entry. Mechanical: `grep -rnE '\b(v1|simplified|static for now|placeholder|defer to follow-up|good enough for now)\b' src/` returns zero, or every hit has a corresponding `scope-reduction` gap entry. Judgment: the requirement-coverage comparison against the spec's FR labels, and whether each deferral's trigger condition is honest and specific.
+- [ ] **[M+J]** No silent scope reduction — every requirement from the traced specification MUST be present in the code OR explicitly deferred via a `gaps.md` entry of type `scope-reduction` per `03-implement.md` Hard Rule 3. Prohibited scope-reduction marker phrases ("simplified version", "static for now", "defer to follow-up", "good enough for now", "stub for the moment", "coming in v2") MUST NOT appear unless each occurrence is tracked in a gap entry. The phrase set is deliberately narrow — only multi-word forms that have negligible legitimate use as substantive technical content. Mechanical: `grep -rnEi 'simplified version|static for now|defer to follow-up|good enough for now|stub for the moment|coming in v2' src/ tests/ specs/` returns zero, or every hit has a corresponding open `scope-reduction` gap whose body cites the affected repo-relative file path. The canonical list and scan implementation live in `validate.py` `_DEFERRAL_PHRASES` and `check_silent_deferral_phrases` — the prose here mirrors that list. Judgment: the requirement-coverage comparison against the spec's FR labels, and whether each deferral's trigger condition is honest and specific.
 - [ ] **[J]** Documentation updated if externally visible behavior changed
 
 ## Git Conventions

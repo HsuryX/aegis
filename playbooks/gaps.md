@@ -1,16 +1,28 @@
 <!--
 SYNC-IMPACT
-- version: 0.0.0 → 1.0.0
-- bump: MAJOR
-- date: 2026-04-19
-- rationale: Initial release — establishes the v1.0.0 baseline for the aegis governance framework. All rules in AGENTS.md and playbooks/ are introduced at this version; subsequent releases follow the Amendment Protocol in AGENTS.md and the Versioning Policy in CHANGELOG.md.
-- downstream_review_required: []
+- version: 1.0.0 → 1.1.0
+- bump: MINOR
+- date: 2026-04-25
+- rationale: Framework refinement release. Adds the bounded-change 0 -> 3 path for already-governed work (`00-audit.md`); the harness security-claim model with explicit control-class (`Executable` / `Backstop` / `Advisory`) and activation-state (`Active now` / `Shipped but inactive` / `Not available here`) classification (`harness/capability-matrix.md`); the Canonical Dependency Edges DAG seeding the Whole-System Composition Check (`01-design.md`); the Adversarial Review Protocol Per-phase timing-hooks table (`principles-gates.md`); the Scope-Proportional gate-protocol mini-matrix (`principles-gates.md` Scope-Proportional Ceremony); the `phase regression` glossary entry; and `validate.py check_traceability` — a file-level `Implements:`/`Covers:` rollup (warning-only, vacuous on the framework repo itself). Extends Required Behaviors #7 with an archive-decay re-evaluation rule for consulted archive entries >= 12 months old (`principles.md`). Expands the existing Cold Read perspective with a concrete protocol (`principles-gates.md`). Adds a date-only UTC variant to the scope-reduction sign-off format for `micro`/`small` projects (`00-audit.md` ceremony matrix + `release-readiness.md` checklist); the full git-email anchored form remains for `standard`/`large`. Relaxes Session Start Protocol Step 3 — the integrity block now accepts any form that cites countable or tool-checkable evidence; the prior templated form is preserved as a reference example. Promotes the implementation-boundary rule to a dedicated `## Implementation Boundary` section in `AGENTS.md` (v1.0.0 carried the rule as a paragraph below the Phase Gates table); the new section's bounded-change summary paragraph points at `00-audit.md` for the full Bounded-Change Rule; surfaces additional Phase 1 gate items (Authority model, Whole-System Composition Check, threat-model applicability) and Phase 2 Proof-class declaration in the `AGENTS.md` Phase Gates table; decouples the Phase 1 threat-model gate from `specs/threat-model.md` artifact-existence (binds to whichever path D-5 declares); reformats the `AGENTS.md` Workspace Discipline second paragraph from a single run-on into a 6-bullet list (preserving v1.0.0 content and adding a Bash-subprocess-gap caveat); trims the scope-reduction marker phrase list (`validate.py` `_DEFERRAL_PHRASES`, mirrored in `standards.md` / `03-implement.md` / `harness/cursor/.cursor/rules/phase-3.mdc`) to unambiguous multi-word forms only, dropping false-positive-prone tokens. De-duplicates the Verdict Discipline definition (`AGENTS.md` is sole canonical owner; glossary holds a one-paragraph redirect); removes the four per-phase `## Adversarial Gate Check` stanzas (replaced by the new Per-phase timing-hooks table); removes the redundant placeholder grep at `02-spec.md` Quality Checks (the Phase Gate scan is a strict superset). Compresses Codex and Cursor harness READMEs by deferring universal-backstop guidance to `harness/capability-matrix.md`. Required Behaviors #8 grep formula relocates from `principles.md` body to `automation.md` Lessons-Gap Backstop. Removes the `validate.py` Verification Coverage Matrix anchor-diversity check; its enforcement contract is already covered by check 7 (evidence verifiability). SemVer MINOR — additive and refinement; no rule becomes stricter than v1.0.0 in a way that invalidates prior compliance.
+- downstream_review_required:
+  - README.md
+  - ONBOARDING.md
+  - CHANGELOG.md
+  - harness/capability-matrix.md
+  - harness/claude-code/README.md
+  - harness/codex/README.md
+  - harness/cursor/README.md
+  - harness/ci/README.md
+  - harness/claude-code/hooks-cookbook.md
+  - harness/claude-code/skills/phase-status/SKILL.md
+  - validate.py
+  - tools/bootstrap.sh
 -->
 ---
 id: playbooks/gaps
 title: Gap Playbook
-version: 1.0.0
-last_reviewed: 2026-04-19
+version: 1.1.0
+last_reviewed: 2026-04-25
 applies_to:
   - phase: all
 severity: normative
@@ -32,7 +44,7 @@ supersedes: null
 
 ## Purpose
 
-Gaps track unresolved information that the framework cannot yet act on. They are the framework's mechanism for acknowledging uncertainty without either ignoring it or blocking all progress. Every gap has a severity (determines whether it blocks phase advancement), a type (determines how to resolve it), and a lifecycle (determines when it expires or MUST be acted upon).
+Gaps track unresolved information that the framework cannot yet act on. They are the framework's mechanism for acknowledging uncertainty without either ignoring it or blocking all progress. Every gap has a severity (determines whether it blocks phase advancement), a type (determines how to resolve it), and a lifecycle (determines when it expires or MUST be acted upon). There is NO separate `accepted-risk` gap type — when residual risk remains, prose MAY say `residual risk tracked in G-{n}`, but the cited `G-{n}` MUST use one of the nine canonical types below.
 
 Gap entries live in `.agent-state/gaps.md`. Identifiers follow the rules in [`identifiers.md`](./identifiers.md): `G-{n}` IDs are monotonic across the entire project lifetime and MUST NOT be reused after resolution. Resolved gaps retain their original ID for historical traceability.
 
@@ -45,9 +57,9 @@ Nine types, ordered by how they arise in the workflow:
 | **evidence** | Empirical data needed — a spike or prototype is required to answer a specific question. | A design decision cannot be moved to `Accepted` without experimental data. | Spike outcome recorded in the gap's Resolution field; blocked decision moves toward `Accepted` or `Rejected`. See `01-design.md` Prototyping Protocol. |
 | **analysis** | Deeper thinking needed on an existing question — no spike required, but the answer is not yet clear. | A design decision has multiple viable alternatives and the current analysis is insufficient to choose. | Extended analysis recorded; decision moves forward or the gap is converted to `evidence` if a spike is needed. |
 | **decision** | A new design decision is required — a concept arose that has no decision entry. | Implementation or specification work reveals an architectural choice that was not anticipated during Phase 1. | A new `D-{n}` entry is created in `decisions.md`; the agent regresses to Phase 1 if the decision is cross-cutting. |
-| **framework** | A framework rule itself is wrong or inadequate. | A playbook rule produces a bad outcome per the Spirit = Letter threshold in `principles.md`, or a rule is ambiguous enough to produce inconsistent behavior across sessions. | Proposed amendment via the Amendment Protocol in `AGENTS.md`. The user decides. |
+| **framework** | A framework rule itself is wrong or inadequate. | A playbook rule produces a bad outcome per the Spirit = Letter threshold in `principles.md`, or a rule is ambiguous enough to produce inconsistent behavior across sessions. | Proposed amendment via the Amendment Protocol in `principles-gates.md`. The user decides. |
 | **deviation** | A recorded departure from a framework rule, approved by the user, with an explicit expiry condition. | The user authorizes a temporary exception to a framework rule. | The expiry condition fires; the deviation is either converted to a framework amendment or the original rule is restored. Expired deviations MUST be flagged at session start per `AGENTS.md` Session Start Protocol step 3. |
-| **conditional** | A condition attached to a `keep-with-conditions` verdict in `audit.md`. MUST be met before the next phase gate fires. | An audit surface element is correct in substance but requires specific follow-up work. See `AGENTS.md` Verdict Discipline. | The condition is met (code change, decision, or verification); the linked verdict is confirmed as `keep`. An unmet condition at gate time reverts the verdict to `redesign`. |
+| **conditional** | A bounded carry-forward obligation created by either a `keep-with-conditions` verdict in `audit.md` or a `Conditional Go` gate outcome. MUST be met before its trigger fires. | A reviewed item is acceptable to carry forward only with specific follow-up work. See `AGENTS.md` Verdict Discipline and `principles-gates.md` Gate Outcome Vocabulary. | The condition is met (code change, decision, or verification). If the trigger fires first, the carry-forward fails and the gap becomes critical until the affected verdict or gate is re-closed correctly. |
 | **scope-reduction** | An explicit, tracked deferral of a specified requirement — the permitted alternative to silent scope reduction. | A specified requirement cannot be implemented in the current phase but the deferral is deliberate, bounded, and user-confirmed when critical. See `03-implement.md` Hard Rule 3. | The trigger condition fires and the requirement is restored; or the requirement is renegotiated with the user and the gap is converted to a decision. |
 | **failure-pattern** | A named failure mode detected during work — matches a pattern in `failure-patterns.md`. | The agent recognizes a known anti-pattern (e.g., "kitchen-sink-session", "wrapper-preservation", "rationalization-cascade") during a session. | The pattern's documented counter is applied; the gap is resolved when the counter is verified. See `failure-patterns.md` for the 12-pattern registry with Symptom / Counter / Cross-reference for each. |
 | **grandfathered** | Pre-adoption artifact preserved under explicit expiry — legacy tests, specs, or decisions that existed before aegis was adopted and cannot be retrofitted at once. | At adoption time, when aegis is applied to an existing project with pre-existing artifacts that would otherwise fail traceability or coverage rules. Prevents the adoption cliff from blocking adoption. See `03-implement.md` Legacy-test grandfathering for the canonical pattern. | Expires when 100% of the originally-grandfathered artifacts have been edited, superseded, or deleted. The entry MUST list the initial set (or a `git log` anchor) so the expiry is verifiable. Grandfathering MUST NOT be invoked retroactively on artifacts modified after adoption — any touched artifact reverts to the normal traceability requirement. |
@@ -56,7 +68,7 @@ Nine types, ordered by how they arise in the workflow:
 
 Two levels:
 
-- **Critical** — the gap makes it impossible to produce a correct result in the current phase. Missing information that prevents a decision, unresolved contradiction between decisions, security or correctness concern, or ambiguity that would cause two competent agents to produce incompatible outputs. **Blocks phase advancement** — the phase gate MUST NOT pass with any open critical gap. Gate outcome: `Hold` or `Recycle` per the Gate Outcome Vocabulary in `principles.md`.
+- **Critical** — the gap makes it impossible to produce a correct result in the current phase. Missing information that prevents a decision, unresolved contradiction between decisions, security or correctness concern, or ambiguity that would cause two competent agents to produce incompatible outputs. **Blocks phase advancement** — the phase gate MUST NOT pass with any open critical gap. Gate outcome: `Hold` or `Recycle` per the Gate Outcome Vocabulary in `principles-gates.md`.
 - **Non-critical** — the gap SHOULD be addressed but the current phase can produce a correct (if incomplete) result without it. Optimization opportunities, edge cases with known workarounds, style or naming refinements, low-risk assumptions with documented fallback. **Does NOT block phase advancement** — the gate MAY pass with tracked non-critical gaps.
 
 When uncertain, classify as critical — false positives cost less than false negatives.
@@ -82,12 +94,12 @@ Quick Capture exists to prevent a common failure mode: gap entries written under
 All gaps start as `open` (or `captured` via Quick Capture, then triaged to `open`). Resolution depends on the type:
 
 - **evidence, analysis, decision**: resolved when the information is obtained and recorded in the Resolution field. For `decision` type, a corresponding `D-{n}` entry MUST exist in `decisions.md`.
-- **framework**: resolved when the user approves, modifies, or rejects the proposed amendment per the Amendment Protocol.
+- **framework**: resolved when the user approves, modifies, or rejects the proposed amendment per the Amendment Protocol in `principles-gates.md`.
 - **deviation**: resolved when the expiry condition fires AND either the original rule is restored or a framework amendment is approved. Expired deviations that remain unresolved MUST be flagged at every session start.
-- **conditional**: resolved when the condition is met. An unmet condition at gate time reverts the linked `keep-with-conditions` verdict to `redesign` — the gap transitions to "resolved (unmet — verdict reverted)" and the affected surface MUST be re-audited.
+- **conditional**: resolved when the condition is met. If the trigger fires while still open, the gap becomes critical and the carry-forward fails — verdict-based conditionals revert the linked `keep-with-conditions` verdict to `redesign`; gate-based conditionals block the named next gate until resolved.
 - **scope-reduction**: resolved when the trigger fires and the deferred requirement is restored, or when the user explicitly renegotiates the requirement into a decision.
 - **failure-pattern**: resolved when the pattern's documented counter is applied and verified effective.
-- **grandfathered**: resolved when the expiry condition fires — either 100% of originally-grandfathered artifacts have been edited/superseded/deleted, or the user explicitly retires the grandfathering convention via the Amendment Protocol. Partial resolution (some artifacts retrofitted) does NOT close the gap; the gap tracks the full set.
+- **grandfathered**: resolved when the expiry condition fires — either 100% of originally-grandfathered artifacts have been edited/superseded/deleted, or the user explicitly retires the grandfathering convention via the Amendment Protocol in `principles-gates.md`. Partial resolution (some artifacts retrofitted) does NOT close the gap; the gap tracks the full set.
 
 **Archival:** per `principles.md` Required Behaviors #6 (state-file hygiene) and #7 (archive consultation), resolved gaps are archived to `gaps-archive.md` when `.agent-state/gaps.md` exceeds 300 lines. Archived entries retain their original `G-{n}` ID. The agent MUST read the archive when creating new gaps to check for conflicts or recurrences.
 
@@ -99,13 +111,13 @@ Additional fields by type:
 
 | Field | Required for | Purpose |
 |---|---|---|
-| **Expiry condition** | `deviation`, `conditional`, `scope-reduction`, `grandfathered` | When the entry expires or its trigger fires |
+| **Expiry condition** | `deviation`, `grandfathered` | When the entry expires and MUST be re-evaluated |
 | **Trigger condition** | `conditional`, `scope-reduction` | The specific event that MUST cause action |
-| **Linked verdict** | `conditional` | The `keep-with-conditions` audit surface this condition belongs to |
+| **Linked verdict** | `conditional` entries opened from `keep-with-conditions` | The audit surface this condition belongs to |
 | **Initial artifact set** | `grandfathered` | List of file paths or a `git log` anchor identifying the legacy artifacts covered — required for expiry verification |
 | **Severity history** | any type whose Severity has changed since opening | Append-only record of each severity change (see Severity history rule below) |
 
-All other type-specific fields leave blank or omit when not applicable. **Severity history** applies to all types but is required only when the Severity value has actually changed.
+All other type-specific fields leave blank or omit when not applicable. Gate-created `conditional` gaps cite the unmet gate item in `Description` / `Resolution path`; they do NOT invent a second conditional field. **Severity history** applies to all types but is required only when the Severity value has actually changed.
 
 **Severity history (append-only, all types).** Any entry whose `Severity` value has changed since the gap was first opened MUST carry a `**Severity history:**` field listing each change as `{YYYY-MM-DD}: {old} → {new} — {justification}`. A severity **downgrade** (critical → non-critical) is a known abuse vector: an unresolved critical gap can be made to pass the phase gate by mechanical severity change rather than actual resolution. Downgrades MUST cite: (a) what specific evidence justifies the reduced severity, OR (b) a named user approval recorded in the session log (for critical → non-critical, user approval is RECOMMENDED). Upgrades (non-critical → critical) require no justification beyond "new evidence" and MAY be applied by the agent unilaterally — erring on the side of critical is consistent with the Severity Criteria principle. A `validate.py` check cross-references `gaps-archive.md` against the current `gaps.md` severity values; any silent downgrade of an archived-critical gap is a check failure.
 
@@ -113,20 +125,20 @@ All other type-specific fields leave blank or omit when not applicable. **Severi
 
 | Severity | Gate behavior |
 |---|---|
-| **Critical** | Blocks advancement. Gate outcome MUST be `Hold` or `Recycle` until all critical gaps are resolved. Mechanical check: `grep -A1 '^### G-' .agent-state/gaps.md \| grep -B1 'Severity:\*\* critical' \| grep 'Status:\*\* open'` MUST return zero hits. |
+| **Critical** | Blocks advancement. Gate outcome MUST be `Hold` or `Recycle` until all critical gaps are resolved. Mechanical check: `grep -A4 '^### G-' .agent-state/gaps.md \| grep -B4 'Severity:\*\* critical' \| grep 'Status:\*\* open'` MUST return zero hits. |
 | **Non-critical** | Does NOT block advancement. The gate MAY pass. The agent MUST list open non-critical gaps in the gate report so the user is aware of the tracked debt. |
 
-**Conditional gaps and gate timing:** a `conditional` gap's `Trigger condition` defines WHEN the condition MUST be met. If the trigger fires and the gap is still open, the linked `keep-with-conditions` verdict reverts to `redesign` and the gap becomes critical (blocks the gate until the reverted verdict is addressed).
+**Conditional gaps and gate timing:** a `conditional` gap's `Trigger condition` defines WHEN the carry-forward obligation MUST be met. If the trigger fires and the gap is still open, the gap becomes critical (blocks the gate). For verdict-based conditionals, the linked `keep-with-conditions` verdict reverts to `redesign`; for gate-based conditionals, the named next gate fails until the carry-forward is closed.
 
-**Scope-reduction gaps and gate timing:** a `scope-reduction` gap's `Trigger condition` defines WHEN the deferred requirement MUST be restored or renegotiated. If the trigger fires and the gap is still open (the requirement is neither restored nor explicitly renegotiated into a decision), the gap becomes critical — gate outcome MUST be `Hold` per the Gate Outcome Vocabulary in `principles-gates.md`. The agent MUST escalate to the user with three explicit options: (a) restore the deferred requirement immediately, (b) renegotiate the scope with the user and convert the gap to a new decision (`D-{n}`) that captures the renegotiated scope, or (c) extend the trigger with explicit user approval, recorded as a `deviation`-type gap with its own expiry condition. The agent MUST NOT silently extend the trigger — that converts an explicit deferral back into the silent scope reduction the rule exists to prevent (per `zen.md` aphorism #17).
+**Scope-reduction gaps and gate timing:** a `scope-reduction` gap's `Trigger condition` defines WHEN the deferred requirement MUST be restored or renegotiated. If the trigger fires and the gap is still open (the requirement is neither restored nor explicitly renegotiated into a decision), the gap becomes critical — gate outcome MUST be `Hold` per the Gate Outcome Vocabulary in `principles-gates.md`. The agent MUST escalate to the user with three explicit options: (a) restore the deferred requirement immediately, (b) renegotiate the scope with the user and convert the gap to a new decision (`D-{n}`) that captures the renegotiated scope, or (c) extend the trigger only with explicit user approval by updating the same `scope-reduction` gap's `Trigger condition` and recording the approval plus prior/new trigger values in the session log so the extension is auditable. The agent MUST NOT silently extend the trigger — that converts an explicit deferral back into the silent scope reduction the rule exists to prevent (per `zen.md` aphorism #17).
 
 ## Cross-References
 
 - Gap identifiers: [`identifiers.md`](./identifiers.md) `G-{n}` rules
 - Gap entry working template: `.agent-state/gaps.md`
 - Archival rules: `principles.md` Required Behaviors #6 (state-file hygiene) and #7 (archive consultation)
-- Framework amendment flow: `AGENTS.md` Amendment Protocol
-- Deviation tracking: `AGENTS.md` Amendment Protocol (temporary deviations)
+- Framework amendment flow: `principles-gates.md` Amendment Protocol
+- Deviation tracking: `principles-gates.md` Amendment Protocol (temporary deviations)
 - Verdict conditions: `AGENTS.md` Verdict Discipline (`keep-with-conditions`)
 - Scope deferral: `03-implement.md` Hard Rule 3 (silent vs. explicit deferral)
 - Prototyping: `01-design.md` Prototyping Protocol (evidence type)

@@ -1,16 +1,28 @@
 <!--
 SYNC-IMPACT
-- version: 0.0.0 → 1.0.0
-- bump: MAJOR
-- date: 2026-04-19
-- rationale: Initial release — establishes the v1.0.0 baseline for the aegis governance framework. All rules in AGENTS.md and playbooks/ are introduced at this version; subsequent releases follow the Amendment Protocol in AGENTS.md and the Versioning Policy in CHANGELOG.md.
-- downstream_review_required: []
+- version: 1.0.0 → 1.1.0
+- bump: MINOR
+- date: 2026-04-25
+- rationale: Framework refinement release. Adds the bounded-change 0 -> 3 path for already-governed work (`00-audit.md`); the harness security-claim model with explicit control-class (`Executable` / `Backstop` / `Advisory`) and activation-state (`Active now` / `Shipped but inactive` / `Not available here`) classification (`harness/capability-matrix.md`); the Canonical Dependency Edges DAG seeding the Whole-System Composition Check (`01-design.md`); the Adversarial Review Protocol Per-phase timing-hooks table (`principles-gates.md`); the Scope-Proportional gate-protocol mini-matrix (`principles-gates.md` Scope-Proportional Ceremony); the `phase regression` glossary entry; and `validate.py check_traceability` — a file-level `Implements:`/`Covers:` rollup (warning-only, vacuous on the framework repo itself). Extends Required Behaviors #7 with an archive-decay re-evaluation rule for consulted archive entries >= 12 months old (`principles.md`). Expands the existing Cold Read perspective with a concrete protocol (`principles-gates.md`). Adds a date-only UTC variant to the scope-reduction sign-off format for `micro`/`small` projects (`00-audit.md` ceremony matrix + `release-readiness.md` checklist); the full git-email anchored form remains for `standard`/`large`. Relaxes Session Start Protocol Step 3 — the integrity block now accepts any form that cites countable or tool-checkable evidence; the prior templated form is preserved as a reference example. Promotes the implementation-boundary rule to a dedicated `## Implementation Boundary` section in `AGENTS.md` (v1.0.0 carried the rule as a paragraph below the Phase Gates table); the new section's bounded-change summary paragraph points at `00-audit.md` for the full Bounded-Change Rule; surfaces additional Phase 1 gate items (Authority model, Whole-System Composition Check, threat-model applicability) and Phase 2 Proof-class declaration in the `AGENTS.md` Phase Gates table; decouples the Phase 1 threat-model gate from `specs/threat-model.md` artifact-existence (binds to whichever path D-5 declares); reformats the `AGENTS.md` Workspace Discipline second paragraph from a single run-on into a 6-bullet list (preserving v1.0.0 content and adding a Bash-subprocess-gap caveat); trims the scope-reduction marker phrase list (`validate.py` `_DEFERRAL_PHRASES`, mirrored in `standards.md` / `03-implement.md` / `harness/cursor/.cursor/rules/phase-3.mdc`) to unambiguous multi-word forms only, dropping false-positive-prone tokens. De-duplicates the Verdict Discipline definition (`AGENTS.md` is sole canonical owner; glossary holds a one-paragraph redirect); removes the four per-phase `## Adversarial Gate Check` stanzas (replaced by the new Per-phase timing-hooks table); removes the redundant placeholder grep at `02-spec.md` Quality Checks (the Phase Gate scan is a strict superset). Compresses Codex and Cursor harness READMEs by deferring universal-backstop guidance to `harness/capability-matrix.md`. Required Behaviors #8 grep formula relocates from `principles.md` body to `automation.md` Lessons-Gap Backstop. Removes the `validate.py` Verification Coverage Matrix anchor-diversity check; its enforcement contract is already covered by check 7 (evidence verifiability). SemVer MINOR — additive and refinement; no rule becomes stricter than v1.0.0 in a way that invalidates prior compliance.
+- downstream_review_required:
+  - README.md
+  - ONBOARDING.md
+  - CHANGELOG.md
+  - harness/capability-matrix.md
+  - harness/claude-code/README.md
+  - harness/codex/README.md
+  - harness/cursor/README.md
+  - harness/ci/README.md
+  - harness/claude-code/hooks-cookbook.md
+  - harness/claude-code/skills/phase-status/SKILL.md
+  - validate.py
+  - tools/bootstrap.sh
 -->
 ---
 id: playbooks/security-threat-model
 title: Security Threat Model
-version: 1.0.0
-last_reviewed: 2026-04-19
+version: 1.1.0
+last_reviewed: 2026-04-25
 applies_to:
   - phase: 0-audit
   - phase: 1-design
@@ -42,7 +54,7 @@ The threat model MUST be completed when ANY of the following is true:
 - The system exposes an interface that crosses a **trust boundary** (user→system, system→third-party, unauthenticated→authenticated, internal→external, less-privileged→more-privileged)
 - The system accepts **input from an external source that could be adversarial** (network requests, file uploads, inter-process messages, environment variables from untrusted sources)
 
-Projects meeting NONE of the above MAY record the decision as `threat model: N/A — {one-sentence justification, e.g., "internal build tool with no secrets, no user data, no external input"}` in the D-5 (Security model) decision entry and skip the remainder of this playbook. The agent MUST NOT invoke the N/A escape without verifying against the four conditions; the justification MUST state which condition is being invoked and why.
+Projects meeting NONE of the above MAY record the decision as `threat model: N/A — {one-sentence justification, e.g., "internal build tool with no secrets, no user data, no external input"}` in the D-5 (Security model) decision entry and skip the remainder of this playbook. The agent MUST NOT invoke the N/A escape without verifying against the four conditions; the justification MUST state which of the four applicability conditions are absent and why.
 
 ## STRIDE Overview
 
@@ -57,7 +69,7 @@ STRIDE is a threat classification framework developed by Microsoft. Each letter 
 | **D** | Denial of service | Preventing legitimate access |
 | **E** | Elevation of privilege | Gaining capabilities beyond those granted |
 
-For each trust boundary, the agent MUST enumerate at least one mitigation, explicit accepted-risk entry, or explicit structural `N/A — {one-sentence structural justification}` per STRIDE letter. An unaddressed cell is an unknown risk — the STRIDE matrix is exhaustive by design; completeness is the entire point. Structural N/A is valid ONLY when the boundary's architecture makes the threat class inapplicable (e.g., a read-only service has no Repudiation vector because there are no actions to deny; a boundary with no privilege model has no Elevation of privilege vector). Vague N/A ("not relevant", "doesn't apply") is a gaming attempt and fails the judgment check below.
+For each trust boundary, the agent MUST enumerate at least one mitigation, a cited residual-risk note (`residual risk tracked in G-{n}`), or explicit structural `N/A — {one-sentence structural justification}` per STRIDE letter. An unaddressed cell is an unknown risk — the STRIDE matrix is exhaustive by design; completeness is the entire point. Structural N/A is valid ONLY when the boundary's architecture makes the threat class inapplicable (e.g., a read-only service has no Repudiation vector because there are no actions to deny; a boundary with no privilege model has no Elevation of privilege vector). Vague N/A ("not relevant", "doesn't apply") is a gaming attempt and fails the judgment check below.
 
 ## Phase 0: Preliminary Threat Model
 
@@ -71,7 +83,7 @@ The preliminary model is NOT the full STRIDE matrix. It is the Phase 0 input tha
 
 ## Phase 1: Full STRIDE Matrix
 
-Before the Design Closure Gate, the full STRIDE matrix MUST be populated and attached to D-5 (Security model) as a linked artifact at `specs/threat-model.md` (or inline within D-5 when the matrix fits in one page). Required structure:
+Before the Design Closure Gate, the full STRIDE matrix MUST be populated and attached to D-5 (Security model) as a linked artifact at `specs/threat-model.md`. Required structure:
 
 ```
 ## Threat Model
@@ -83,17 +95,19 @@ Before the Design Closure Gate, the full STRIDE matrix MUST be populated and att
 
 **STRIDE matrix:**
 
-- **Spoofing:** {scenario} → mitigation: {D-{n}, spec FR-{n}, standard rule, "accepted risk G-{n}", or "N/A — {structural justification}"}
+- **Spoofing:** {scenario} → mitigation: {D-{n}, specs/<spec>.md:FR-{n}, specs/<spec>.md:NFR-{n}, specs/<spec>.md:SC-{n}, standard rule, "residual risk tracked in G-{n}", or "N/A — {structural justification}"}
 - **Tampering:** {scenario} → mitigation: {...}
 - **Repudiation:** {scenario} → mitigation: {...}
 - **Information disclosure:** {scenario} → mitigation: {...}
 - **Denial of service:** {scenario} → mitigation: {...}
 - **Elevation of privilege:** {scenario} → mitigation: {...}
 
-**Residual risk:** {accepted risks linked to gap entries; "none" is acceptable only when every STRIDE letter is mitigated}
+**Residual risk:** {residual risks linked to real `G-{n}` entries; "none" is acceptable only when every STRIDE letter is mitigated or structurally `N/A`} 
+**Detection signal:** {how this boundary's failure would be noticed in the current system}
+**Response procedure:** {what the responder does when the detection signal fires}
 ```
 
-Every mitigation reference MUST resolve to an artifact that exists by the Phase 1 gate — a decision, a spec FR/SC, a standards.md rule, or an explicit `accepted-risk` gap entry in `gaps.md`. A mitigation reading "TBD" or "add later" is not a mitigation and MUST be recorded as an accepted-risk gap with an explicit trigger.
+Every mitigation reference MUST resolve to an artifact that exists by the Phase 1 gate — a decision, a path-qualified spec reference such as `specs/<spec>.md:FR-{n}` / `specs/<spec>.md:NFR-{n}` / `specs/<spec>.md:SC-{n}`, a standards.md rule, or a cited `G-{n}` gap referenced as `residual risk tracked in G-{n}`. A mitigation reading "TBD" or "add later" is not a mitigation and MUST be recorded as a real `G-{n}` entry using the canonical gap type that matches why the risk remains open.
 
 ## Mitigation Categories
 
@@ -102,9 +116,11 @@ Each STRIDE cell's mitigation SHOULD fall into one of these categories:
 - **Control** — a mechanism that prevents the threat (authentication, authorization, input validation, encryption, rate limiting)
 - **Detection** — a mechanism that reveals the threat when it occurs (logging, audit trails, anomaly alerting)
 - **Response** — a procedure that handles the threat after detection (revocation, rollback, incident response)
-- **Accepted risk** — an explicit decision that the residual risk is tolerable, recorded as a gap entry with justification and re-evaluation trigger
+- **Residual risk tracked in `G-{n}`** — an explicit statement that the residual risk is tolerable for now, with the cited `G-{n}` carrying the real canonical gap type, justification, and re-evaluation rule
 
-A mitigation is complete when at least one of control/detection/response is present; accepted risk is a valid but weaker option that MUST cite the reason and expiry.
+A mitigation is complete when at least one of control/detection/response is present; residual-risk tracking is a valid but weaker option that MUST cite why the risk is tolerated plus how the cited gap will be re-evaluated (trigger or expiry, as applicable).
+
+When a mitigation depends on harness or workflow controls, the agent MUST classify it using the canonical control-class model plus the relevant activation context. Harness-side controls use `harness/capability-matrix.md` (or the project's equivalent local control ledger) for **Executable** / **Backstop** / **Advisory** plus activation state. Framework workflow backstops (for example validator runs, gate review, rollback procedure) MAY count as active mitigations only when the mitigation text names them explicitly as workflow-executed in the current governance flow. `workflow-executed now` is explanatory prose, not a fourth activation-state enum — it means the backstop is required by the current phase/gate/release workflow and has fresh evidence in the current session or cited artifact trail. Only **Active now** harness controls or explicitly named workflow-executed backstops count as active mitigations. **Shipped but inactive** or **Not available here** controls describe capability, not present protection. Advisory/manual discipline alone MUST NOT be the only claimed mitigation for a STRIDE cell; if no active executable or backstop control exists, the cell remains a residual risk and MUST cite the appropriate `G-{n}` entry.
 
 ## LLM-Aware Threat Classes
 
@@ -137,10 +153,10 @@ Each review MUST produce either a "no change required" session log entry or an a
 Tags use the canonical bold-gate-marker form per `playbooks/automation.md` validate.py check #3: `[M]` mechanical, `[J]` judgment, `[M+J]` both.
 
 - [ ] **[M]** Boundary count consistency — the agent MUST verify that `grep -c '^### Boundary:' specs/threat-model.md` equals the count of distinct trust boundaries declared in D-5. Mismatch is a structural problem and MUST halt the Phase 1 gate.
-- [ ] **[M]** STRIDE completeness — every boundary section MUST contain exactly 6 STRIDE bullet lines matching the canonical letters. `grep -cE '^- \*\*(Spoofing|Tampering|Repudiation|Information disclosure|Denial of service|Elevation of privilege):' specs/threat-model.md` MUST equal 6 × (boundary count). Each bullet MUST carry either a mitigation reference (D-/FR-/SC-/G- identifier or standards.md rule), an `accepted risk G-{n}` reference, or an explicit structural `N/A — {one-sentence structural justification}` value. Empty-after-colon bullets fail.
-- [ ] **[J]** Mitigation specificity — every STRIDE cell's mitigation MUST name a specific D-/FR-/SC-/G- identifier or a standards.md rule by section name. Cells reading only "encrypted" or "validated" without a reference are judgment failures.
-- [ ] **[J]** N/A justification honesty — every STRIDE letter marked `N/A` MUST cite a structural reason grounded in the boundary's architecture (e.g., "N/A — read-only service, no state to repudiate"; "N/A — single-tenant CLI, no privilege model"). Vague justifications ("N/A — not relevant", "N/A — doesn't apply", "N/A — out of scope") fail. The reviewer MUST ask: does the cited reason follow from a concrete architectural property of the boundary? If the answer is no, the N/A is gaming and the cell MUST be populated with a real mitigation or an explicit accepted-risk gap.
-- [ ] **[J]** Accepted-risk justification — every accepted risk MUST cite its reason and re-evaluation trigger. "We'll fix it later" is not a justification.
+- [ ] **[M]** STRIDE completeness — every boundary section MUST contain exactly one bullet for each of the six canonical STRIDE letters. `grep -cE '^- \*\*(Spoofing|Tampering|Repudiation|Information disclosure|Denial of service|Elevation of privilege):' specs/threat-model.md` MUST equal 6 × (boundary count), and a per-boundary inspection MUST confirm no letter is duplicated or missing. Each bullet MUST carry either a mitigation reference (`D-{n}` or path-qualified spec IDs such as `specs/<spec>.md:FR-{n}` / `specs/<spec>.md:NFR-{n}` / `specs/<spec>.md:SC-{n}`), a standards.md rule, a `residual risk tracked in G-{n}` reference, or an explicit structural `N/A — {one-sentence structural justification}` value. Empty-after-colon bullets fail.
+- [ ] **[J]** Mitigation specificity — every STRIDE cell's mitigation MUST name a specific `D-{n}` identifier, a path-qualified spec reference such as `specs/<spec>.md:FR-{n}` / `specs/<spec>.md:NFR-{n}` / `specs/<spec>.md:SC-{n}`, a standards.md rule by section name, or an explicit `residual risk tracked in G-{n}` reference. Cells reading only "encrypted" or "validated" without a reference are judgment failures.
+- [ ] **[J]** N/A justification honesty — every STRIDE letter marked `N/A` MUST cite a structural reason grounded in the boundary's architecture (e.g., "N/A — read-only service, no state to repudiate"; "N/A — single-tenant CLI, no privilege model"). Vague justifications ("N/A — not relevant", "N/A — doesn't apply", "N/A — out of scope") fail. The reviewer MUST ask: does the cited reason follow from a concrete architectural property of the boundary? If the answer is no, the N/A is gaming and the cell MUST be populated with a real mitigation or a cited `G-{n}` residual-risk entry.
+- [ ] **[J]** Residual-risk justification — every cited `residual risk tracked in G-{n}` reference MUST point to a real gap entry whose reason and re-evaluation rule are explicit. "We'll fix it later" is not a justification.
 - [ ] **[M+J]** Review-cadence trigger check — the agent MUST audit whether any of the review triggers (trust boundary change, new user data class, stack CVE, security incident) has fired since last review. Mechanical: compare the last-review date in D-5 against current state; Judgment: materiality of any flagged triggers.
 - [ ] **[J]** Detection/response completeness for Post-Completion Control — every residual risk (including detection-only and response-only mitigations) MUST have a detection signal AND a response procedure documented. Missing either is a latent incident.
 - [ ] **[J]** Compliance cross-walk accuracy — when D-5 records mappings to OWASP ASVS, NIST CSF, or ISO 27035, the mappings MUST cite specific sections (not just framework names). Vague cross-walks provide no audit value.

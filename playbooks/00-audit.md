@@ -1,22 +1,34 @@
 <!--
 SYNC-IMPACT
-- version: 0.0.0 → 1.0.0
-- bump: MAJOR
-- date: 2026-04-19
-- rationale: Initial release — establishes the v1.0.0 baseline for the aegis governance framework. All rules in AGENTS.md and playbooks/ are introduced at this version; subsequent releases follow the Amendment Protocol in AGENTS.md and the Versioning Policy in CHANGELOG.md.
-- downstream_review_required: []
+- version: 1.0.0 → 1.1.0
+- bump: MINOR
+- date: 2026-04-25
+- rationale: Framework refinement release. Adds the bounded-change 0 -> 3 path for already-governed work (`00-audit.md`); the harness security-claim model with explicit control-class (`Executable` / `Backstop` / `Advisory`) and activation-state (`Active now` / `Shipped but inactive` / `Not available here`) classification (`harness/capability-matrix.md`); the Canonical Dependency Edges DAG seeding the Whole-System Composition Check (`01-design.md`); the Adversarial Review Protocol Per-phase timing-hooks table (`principles-gates.md`); the Scope-Proportional gate-protocol mini-matrix (`principles-gates.md` Scope-Proportional Ceremony); the `phase regression` glossary entry; and `validate.py check_traceability` — a file-level `Implements:`/`Covers:` rollup (warning-only, vacuous on the framework repo itself). Extends Required Behaviors #7 with an archive-decay re-evaluation rule for consulted archive entries >= 12 months old (`principles.md`). Expands the existing Cold Read perspective with a concrete protocol (`principles-gates.md`). Adds a date-only UTC variant to the scope-reduction sign-off format for `micro`/`small` projects (`00-audit.md` ceremony matrix + `release-readiness.md` checklist); the full git-email anchored form remains for `standard`/`large`. Relaxes Session Start Protocol Step 3 — the integrity block now accepts any form that cites countable or tool-checkable evidence; the prior templated form is preserved as a reference example. Promotes the implementation-boundary rule to a dedicated `## Implementation Boundary` section in `AGENTS.md` (v1.0.0 carried the rule as a paragraph below the Phase Gates table); the new section's bounded-change summary paragraph points at `00-audit.md` for the full Bounded-Change Rule; surfaces additional Phase 1 gate items (Authority model, Whole-System Composition Check, threat-model applicability) and Phase 2 Proof-class declaration in the `AGENTS.md` Phase Gates table; decouples the Phase 1 threat-model gate from `specs/threat-model.md` artifact-existence (binds to whichever path D-5 declares); reformats the `AGENTS.md` Workspace Discipline second paragraph from a single run-on into a 6-bullet list (preserving v1.0.0 content and adding a Bash-subprocess-gap caveat); trims the scope-reduction marker phrase list (`validate.py` `_DEFERRAL_PHRASES`, mirrored in `standards.md` / `03-implement.md` / `harness/cursor/.cursor/rules/phase-3.mdc`) to unambiguous multi-word forms only, dropping false-positive-prone tokens. De-duplicates the Verdict Discipline definition (`AGENTS.md` is sole canonical owner; glossary holds a one-paragraph redirect); removes the four per-phase `## Adversarial Gate Check` stanzas (replaced by the new Per-phase timing-hooks table); removes the redundant placeholder grep at `02-spec.md` Quality Checks (the Phase Gate scan is a strict superset). Compresses Codex and Cursor harness READMEs by deferring universal-backstop guidance to `harness/capability-matrix.md`. Required Behaviors #8 grep formula relocates from `principles.md` body to `automation.md` Lessons-Gap Backstop. Removes the `validate.py` Verification Coverage Matrix anchor-diversity check; its enforcement contract is already covered by check 7 (evidence verifiability). SemVer MINOR — additive and refinement; no rule becomes stricter than v1.0.0 in a way that invalidates prior compliance.
+- downstream_review_required:
+  - README.md
+  - ONBOARDING.md
+  - CHANGELOG.md
+  - harness/capability-matrix.md
+  - harness/claude-code/README.md
+  - harness/codex/README.md
+  - harness/cursor/README.md
+  - harness/ci/README.md
+  - harness/claude-code/hooks-cookbook.md
+  - harness/claude-code/skills/phase-status/SKILL.md
+  - validate.py
+  - tools/bootstrap.sh
 -->
 ---
 id: playbooks/00-audit
 title: Phase 0: Audit
-version: 1.0.0
-last_reviewed: 2026-04-19
+version: 1.1.0
+last_reviewed: 2026-04-25
 applies_to:
   - phase: 0-audit
 severity: normative
 mechanical_items: 2
 judgment_items: 9
-mixed_items: 3
+mixed_items: 2
 references:
   - AGENTS.md
   - playbooks/principles.md
@@ -34,11 +46,13 @@ supersedes: null
 
 ## Objective
 
-The agent MUST catalogue every major surface. For each, the agent MUST determine what exists, what is genuinely strong, what is broken or misleading, and the preliminary verdict. The agent MUST produce a strategy decision.
+The agent MUST catalogue every major surface. For each, the agent MUST determine what exists, what is genuinely strong, what is broken or misleading, and the preliminary verdict. The agent MUST produce a strategy decision, including lifecycle mode.
 
 ## Setup
 
-The project ships with `harness/claude-code/settings.json` pre-configured with write protection (deny rules for `AGENTS.md`, `CLAUDE.md` symlink, `playbooks/`, and `_legacy/`). The agent MUST verify this file exists before auditing — it is the minimum safety net. Full hook setup (formatter, linter, type checker, build check) waits until Phase 1 when the toolchain is decided. See `harness/claude-code/hooks-cookbook.md` for the full settings template with hook examples, and `automation.md` for the agent-neutral automation principles.
+The project ships harness-specific templates and adapters under `harness/`. Before relying on any harness-side protection in an audit, the agent MUST classify the claim via `harness/capability-matrix.md` using both axes from its Security-claim model: control class (`Executable` / `Backstop` / `Advisory`) and activation state (`Active now` / `Shipped but inactive` / `Not available here`). Shipped-but-inactive or advisory-only controls MUST NOT be treated as active mitigation in the Security surface.
+
+In this repo, `harness/claude-code/settings.json` is the canonical Claude Code settings source/template, but it is not active by file presence alone; it becomes active only when a maintainer installs or syncs it into Claude Code's real loaded settings path. Full hook setup (formatter, linter, type checker, build check) waits until Phase 1 when the toolchain is decided. See the relevant per-harness README plus `playbooks/automation.md` for the implementation details.
 
 ## Project Scope Classification
 
@@ -51,7 +65,7 @@ Before auditing surfaces, classify the project scope. This determines which gove
 | **Standard** | Multiple interacting subsystems, or complex security/compliance requirements | Full framework as documented — all surfaces, all 12 decisions, full spec coverage. Expected: 5-15 sessions; if any phase >5 sessions, apply Decomposition Rule. |
 | **Large** | Multiple teams or subsystems with independent release cycles | Full framework plus the Decomposition Rule. Consider feature-sliced delivery (see `01-design.md`). Each sub-project follows Standard session limits. |
 
-The agent MUST record the classification in the Strategy section of `audit.md` alongside the approach decision. If uncertain between two tiers, the agent SHOULD choose the higher tier — under-governing costs more than over-governing.
+The agent MUST record the classification in the Strategy section of `audit.md` alongside the approach decision and lifecycle mode. If uncertain between two tiers, the agent SHOULD choose the higher tier — under-governing costs more than over-governing.
 
 ### Quantitative anchors
 
@@ -101,18 +115,19 @@ The Verification Coverage Matrix row below is **depth-weighted, not skip-allowed
 
 | Protocol | micro | small | standard | large |
 |---|---|---|---|---|
-| Phase gates | 0 → 3 only | 0, 1 (abbreviated), 2 (abbreviated), 3 | full 0 → 1 → 2 → 3 | full 0 → 1 → 2 → 3 |
+| Phase gates | 0 → 3 only | 0, 1 (abbreviated), 2 (abbreviated), 3 | full 0 → 1 → 2 → 3 by default; 0 → 3 permitted for bounded-change cycles already covered by accepted decisions + reviewed specs | full 0 → 1 → 2 → 3 by default; 0 → 3 permitted for bounded-change cycles already covered by accepted decisions + reviewed specs |
 | Verdict discipline (`keep` / `keep-with-conditions` / `redesign` / `delete`) | required | required | required | required |
-| Session Start Protocol | required (steps 1–8) | required (1–8); step 9 scope guard optional | full (1–9) | full (1–9) |
+| Session Start Protocol | required (steps 1–7, 9–10) | required (1–7, 9–10); step 8 scope guard optional | full (1–10) | full (1–10) |
 | Multi-Agent Handoff Protocol (Exit Audit + Entry Acknowledgment triplet) | skip (solo agent) | skip (solo agent); single-line session boundary in phase.md suffices | required when > 1 agent; single-line boundary when solo | required |
-| Subsystem Ownership decision (D-13+) | N/A | N/A | required when ≥ 2 subsystems AND ≥ 3 agents (per AGENTS.md AND-trigger) | required when ≥ 2 subsystems AND ≥ 3 agents |
-| Subsystem Ownership N/A gap entry (for exempt projects) | optional | optional | required | required |
+| Subsystem Ownership decision (D-13+) | N/A | N/A | required when ≥ 2 subsystems AND ≥ 3 distinct agents or team members (per `principles-conditional.md` Subsystem Ownership requirement) | required when ≥ 2 subsystems AND ≥ 3 distinct agents or team members |
+| Subsystem Ownership N/A local `phase.md` note (for exempt projects) | optional | optional | SHOULD record when exempt under the `principles-conditional.md` rule | SHOULD record when exempt under the `principles-conditional.md` rule |
 | Verification Coverage Matrix (5 perspectives — depth-weighted, never skipped) | all 5; depth on structural + cold read | all 5; depth on structural, semantic, cold read | all 5; full depth on every perspective | all 5; full depth on every perspective |
 | Adversarial Review subagent (fresh context) | optional (self-review MAY) | optional | REQUIRED (self-review NOT RECOMMENDED) | REQUIRED |
-| Security threat model (STRIDE cells) | skip unless project handles credentials, PII, or LLM inference | minimal (one table; N/A allowed per threat class) | full STRIDE + LLM-aware classes when applicable | full STRIDE + LLM-aware classes |
-| Test-to-spec traceability (`Covers: SC-{n}`) | required for new tests only | required for new tests only | required (all tests; grandfathering at adoption) | required (all tests; grandfathering at adoption) |
+| Security threat model (STRIDE cells) | skip only when none of the four `security-threat-model.md` applicability conditions are true (no secrets, no user data, no cross-trust-boundary interface, no adversarial external input); LLM inference also triggers LLM-aware classes when present | minimal STRIDE when any applicability condition is true; N/A allowed per threat class only after the four-condition re-check | full STRIDE + LLM-aware classes when applicable | full STRIDE + LLM-aware classes |
+| Test-to-spec traceability (`Covers: specs/<spec>.md:SC-{n}` or equivalent suffix form) | required for new tests only | required for new tests only | required (all tests; grandfathering at adoption) | required (all tests; grandfathering at adoption) |
 | Amendment Protocol (for projects that amend framework rules) | required when amending | required | required | required |
 | Release-readiness.md gate | optional | SHOULD run before external release | required before external release | required before external release |
+| Scope-reduction sign-off format (`release-readiness.md`) | date-only UTC line: `G-{n}: user-signed-off on {YYYY-MM-DD UTC}` | date-only UTC line: `G-{n}: user-signed-off on {YYYY-MM-DD UTC}` | full git-email anchored form: `G-{n}: user-signed-off by {git-email} on {ISO-8601 UTC}` | full git-email anchored form |
 | Archive-read at session start | only when creating/revising entries that may conflict | only when creating/revising entries that may conflict | full session-start read when archives exist | full session-start read when archives exist |
 
 **How to use.** The agent MUST record the scope classification in `phase.md` and MUST apply this matrix when deciding whether a protocol applies. Protocols marked `skip` or `optional` for the project's tier MUST NOT be invoked as ceremonial gates — doing so contradicts scope-proportionality. Scope upgrades (reclassifying upward mid-project) trigger re-audit per the preceding section; scope downgrades are RARE and require user confirmation.
@@ -137,7 +152,7 @@ The agent MUST audit in this order — earlier surfaces constrain later ones:
 
 **Product** (audit first — constrains everything)
 - Boundary and scope (what this system is and is not)
-- Goals, and success criteria as `SC-{n}` labels per [`identifiers.md`](./identifiers.md) — each SC MUST be testable and binary (resolvable to pass/fail by a specific test or audit)
+- Goals, and product success criteria as `PSC-{n}` labels per [`identifiers.md`](./identifiers.md) — each PSC MUST be auditable and binary (resolvable to pass/fail by a specific test, audit, or release check)
 - Non-goals and explicit exclusions as `NG-{n}` labels per [`identifiers.md`](./identifiers.md) — every exclusion MUST carry an `NG-{n}` label so implementation cannot silently broaden scope
 
 **Architecture** (audit second — constrains all technical surfaces)
@@ -157,9 +172,10 @@ The agent MUST audit in this order — earlier surfaces constrain later ones:
 - Observability (logging, metrics, tracing, alerting)
 
 **Security**
-- Trust boundaries and threat model — when the project handles secrets, user data, or cross-trust-boundary communication, the agent MUST produce the preliminary threat model per `playbooks/security-threat-model.md` Phase 0 section as part of this surface entry. Projects qualifying for the N/A escape record it in D-5 during Phase 1 and may leave the threat-model field as "preliminary: N/A pending D-5 justification".
+- Trust boundaries and threat model — when the project handles secrets, user data, cross-trust-boundary communication, or input from an external source that could be adversarial, the agent MUST produce the preliminary threat model per `playbooks/security-threat-model.md` Phase 0 section as part of this surface entry. Projects qualifying for the N/A escape record it in D-5 during Phase 1 and may leave the threat-model field as "preliminary: N/A pending D-5 justification".
 - Secret and credential management and rotation
 - Capability, access control, and authentication model
+- For harness/governance repos, every claimed protection MUST be classified through `harness/capability-matrix.md` as control class + activation state; template-only or advisory claims MUST NOT be written up as active mitigations
 
 **Quality**
 - Test coverage, test quality, and whether tests encode truth or accidents
@@ -201,7 +217,7 @@ Illustrative entries for a hypothetical standard-scope project: a TypeScript RES
 **Reference:** README.md:12-48, openapi.yaml, src/routes/bookmarks.ts, src/auth/jwt.ts, migrations/001_initial.sql
 **Verdict:** keep-with-conditions
 **Conditions:** G-1 (pagination on GET /bookmarks with default limit=50, max=200), G-2 (idempotency keys on POST with 24h dedup window), G-3 (README alignment to PostgreSQL + rate limit disclosure), G-4 (explicit NG-{n} entries for multi-tenancy, sharing, and public indexing)
-**Design notes:** SC-1: p95 GET /bookmarks latency < 200ms under 10k-bookmark accounts. SC-2: 100% of expired-token requests return 401 with stable error shape. NG-1: no multi-tenancy in v1; NG-2: no public sharing URLs; NG-3: no search ranking beyond tag filter. Rate-limiting approach (token-bucket vs. leaky-bucket) is a D-{n} candidate.
+**Design notes:** PSC-1: p95 GET /bookmarks latency < 200ms under 10k-bookmark accounts. PSC-2: 100% of expired-token requests return 401 with stable error shape. NG-1: no multi-tenancy in v1; NG-2: no public sharing URLs; NG-3: no search ranking beyond tag filter. Rate-limiting approach (token-bucket vs. leaky-bucket) is a D-{n} candidate.
 
 ### Architecture
 
@@ -242,9 +258,24 @@ Ordered by prerequisite chain: completeness → depth → cross-cutting analysis
 
 ## Strategy Decision
 
-After audit, the agent MUST choose one strategy and MUST record it in `audit.md`'s Strategy section (Approach + Rationale + Top risks). For green-field projects with no existing codebase, the strategy MUST be new-build (no legacy to reference) — the agent MUST record this and proceed to the Phase Gate (the strategy decision is predetermined, but the gate checks still apply). The strategy MUST live in `audit.md`, not `decisions.md` — it is an audit conclusion, not a design decision.
+After audit, the agent MUST choose one strategy and one lifecycle mode and MUST record both in `audit.md`'s Strategy section (`Approach` + `Lifecycle mode` + `Rationale` + `Top risks`). For green-field projects with no existing codebase, the strategy MUST be new-build (no legacy to reference) — the agent MUST record this and proceed to the Phase Gate (the strategy decision is predetermined, but the gate checks still apply). The strategy MUST live in `audit.md`, not `decisions.md` — it is an audit conclusion, not a design decision.
 
 **Scope classification and ceremony budget.** The scope classification recorded earlier in this phase determines the ceremony budget for every subsequent session. The agent MUST apply the [Scope-Proportional Ceremony Matrix](#scope-proportional-ceremony-matrix) (above, this playbook) to determine which protocols apply at the project's tier: micro, small, standard, or large. Tiers below `standard` are EXPLICITLY PERMITTED to skip or simplify the marked protocols — applying standard-tier ceremony to a micro-scope project is itself a failure mode (rules accumulating without observed-failure precedent, inflating ceremony beyond the scope's real risk). When in doubt about whether a protocol applies, the matrix is the authoritative source; this Strategy Decision section does NOT re-enumerate it to avoid duplicate truth (see `principles.md` Authority Discipline).
+
+**Lifecycle mode.** The agent MUST choose exactly one lifecycle mode and record it in both `audit.md` Strategy and `phase.md`:
+
+- **finite-delivery** — work targets a bounded endpoint. Terminal-phase completion means the project or slice is complete until new scope is explicitly opened.
+- **steady-state** — the repo is expected to continue through recurring change/governance cycles. Terminal-phase completion means the current cycle is complete, not that the product is forever final. The next material work item returns to Phase 0 after terminal-phase housekeeping. This mode MUST NOT be used to bypass decisions, specs, reviews, hotfix/rollback rules, or release checks; it changes terminal meaning only. Release Readiness applies only when a cycle actually ships.
+
+**Bounded-change rule (existing projects only).** Phase 0 MAY classify the current work item as a bounded-change cycle and mark Phases 1–2 `not-applicable` for that cycle, allowing 0 → 3, but ONLY when all of the following hold:
+
+1. Existing `Accepted` or `Final` decisions already cover the requested work.
+2. Existing reviewed specs already cover the requested work.
+3. The change does not introduce or revise a public contract, subsystem boundary, trust boundary, naming concept, machine-readable contract, `PSC-{n}`, or `NG-{n}`.
+4. The Phase 0 delta audit finds no need to reopen Architecture, Runtime, Operations, Security, Quality, or Organization design work for this cycle.
+5. `phase.md` records the justification before implementation begins, naming the reused decision IDs, the reused spec anchors, and the surfaces checked in the delta audit, and marks Phases 1–2 `not-applicable` for the cycle.
+
+If any condition fails, the agent MUST use the default full-cycle path. Bounded-change is not a shortcut around design/spec rigor; it is permission to reuse already-existing design/spec truth when the current change is genuinely inside it.
 
 **In-place evolution** — when:
 - Architecture is broadly sound
@@ -264,22 +295,13 @@ After audit, the agent MUST choose one strategy and MUST record it in `audit.md`
 - Requirements: (a) the audit MUST identify which subsystems fall into which category with explicit justification per subsystem, (b) boundaries between evolved and rewritten portions MUST be cleanly defined — if the boundary is unclear, the agent MUST default to clean-room for the ambiguous region, (c) integration contracts between evolved and rewritten subsystems MUST be treated as public contracts subject to full specification
 - Record the per-subsystem strategy assignment in the Strategy section of `audit.md`
 
-## Adversarial Gate Check
-
-Before evaluating the Phase Gate below, the agent MUST run an adversarial review subagent per `principles-gates.md` Adversarial Review Protocol. This review catches completeness gaps in audit entries that the Quality Checks above might miss — vague `Strong` or `Wrong` fields, hand-waved verdicts, `[NEEDS CLARIFICATION]` markers in product surface goals, unspecified `SC-{n}` success criteria, or `NG-{n}` Non-Goals that are still generic.
-
-**Scope:** required for standard and large scope projects; optional for micro and small (the author MAY self-review against the adversarial reviewer prompt). **Input:** `audit.md` entries for all in-scope surfaces, the scope classification note in `phase.md`, and the Quality Checks section above. **Output:** a list of `file:line` findings. The agent MUST address every finding — by tightening the prose, opening a `gaps.md` entry, or recording a concrete justification in the session log — before the Phase Gate below evaluates.
-
 ## Phase Gate
 
-Ordered by prerequisite: data completeness → strategic decision → risk identification. Every item MUST be satisfied before advancing. Tags: `[M]` mechanical, `[J]` judgment, `[M+J]` both.
+Apply the shared gate procedure from `AGENTS.md` Phase Gates and `principles-gates.md` (Gate Outcome Vocabulary, Three-Tier Gate Criteria, Multi-Perspective Verification, Verification Coverage Matrix). Run the Adversarial Review Protocol per its Per-phase timing hooks table in `principles-gates.md` before scoring this checklist. This checklist records the Phase 0-specific criteria only.
 
-**HALT AND REPORT.** Evaluate each item below against the Gate Outcome Vocabulary and Three-Tier Gate Criteria in `principles-gates.md`. Report the gate outcome (`Go`, `Conditional Go`, `Hold`, `Recycle`, or `Kill`) using the Completion Status Protocol — include evidence for each `[M]` item and a rendered judgment for each `[J]` item. For `Conditional Go`, record each unmet `[should-meet]` item as a `conditional` gap entry. For `Hold` or `Recycle`, list the specific `[must-meet]` items that fail.
-
-**Tally:** 2 `[M]` · 2 `[M+J]` · 1 `[J]`. **Tiers:** 5 `[must-meet]` · 0 `[should-meet]` · 0 `[nice-to-have]`.
+**Tally:** 2 `[M]` · 1 `[M+J]` · 1 `[J]`. **Tiers:** 4 `[must-meet]` · 0 `[should-meet]` · 0 `[nice-to-have]`.
 
 - [ ] **[M]** **[must-meet]** All surfaces required by the scope classification MUST have entries in `audit.md` (for micro: Product + Security; for small: Product + Architecture + Security + Quality; for standard/large: all 7) — surfaces not required by the scope MAY be marked "not-applicable" with the scope classification as justification. Mechanical: `grep -c '^### ' .agent-state/audit.md` MUST match the required surface count for the scope.
 - [ ] **[J]** **[must-meet]** All quality checks above MUST pass (delegates to the 9-item Quality Checks section above, which is judgment-heavy)
-- [ ] **[M]** **[must-meet]** Strategy (in-place vs. clean-room vs. hybrid vs. new-build) MUST be decided and recorded in `audit.md`. Mechanical: `grep -n '^\*\*Approach:\*\*' .agent-state/audit.md` MUST return a match with a non-placeholder value.
+- [ ] **[M]** **[must-meet]** Strategy and lifecycle mode MUST be decided and recorded in `audit.md`. Mechanical: both `grep -n '^\*\*Approach:\*\*' .agent-state/audit.md` and `grep -n '^\*\*Lifecycle mode:\*\*' .agent-state/audit.md` MUST return matches with non-placeholder values.
 - [ ] **[M+J]** **[must-meet]** Top 3 highest-risk structural problems MUST be identified and recorded in `gaps.md`. Mechanical: `grep -c '^### G-' .agent-state/gaps.md` MUST be at least 3. Judgment: "highest-risk" and "structural" require interpretation — see [`glossary.md`](./glossary.md) for the structural-problem definition.
-- [ ] **[M+J]** **[must-meet]** Verification Coverage Matrix complete: all 5 perspectives exercised with clean results. Mechanical: the session log contains a filled matrix with no `no` or `findings` entries. Judgment: the evidence cited for each perspective is genuine. See `principles-gates.md` Verification Coverage Matrix.

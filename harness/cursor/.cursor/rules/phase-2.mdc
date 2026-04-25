@@ -1,6 +1,5 @@
 ---
 description: Phase 2 Spec rules for aegis — canonical specifications, conformance criteria, labeled artifacts
-globs: "**/*"
 alwaysApply: false
 ---
 
@@ -10,11 +9,11 @@ Canonical source: `playbooks/02-spec.md`. Activate this rule only when `.agent-s
 
 ## Objective
 
-The agent MUST draft canonical specifications describing the steady-state final system. Not migration plans. Not history. Not roadmap. The final contract.
+The agent MUST draft canonical specifications describing the current canonical system state for the active cycle. Not migration plans. Not history. Not roadmap. The contract in force.
 
 ## Spec rules
 
-1. **Final system only** — no "currently X, will become Y" language
+1. **Current canonical system only** — no "currently X, will become Y" language
 2. **Decision-traced** — every spec section MUST trace to a `D-{n}` decision
 3. **Unambiguous** — if a behavior can be interpreted two ways, the spec is incomplete
 4. **Written fresh** — the agent MUST NOT edit copies of existing documentation
@@ -23,10 +22,10 @@ The agent MUST draft canonical specifications describing the steady-state final 
 
 ## Required sections (Spec Section Structure)
 
-- **Scope** — what is covered; exclusions MUST be enumerated as `NG-{n}` Non-Goal labels (MUST NOT be empty — write `NG-none` with one-sentence justification if none apply). Scope MUST declare the interface's trust-boundary class: cross-trust-boundary OR internal-only.
+- **Scope** — what is covered, what is excluded, and the interface's trust-boundary class. Spec-local exclusions MUST be written as plain prose or qualified references to `audit.md:NG-{n}` product non-goals where appropriate. Specs MUST NOT mint new canonical `NG-{n}` labels or `NG-none`. Scope MUST declare whether the interface is cross-trust-boundary OR internal-only.
 - **Definitions** — canonical terms used (referencing the Naming Table)
 - **Contract** — formats, behaviors, invariants, constraints; every significant behavior MUST carry an `FR-{n}` (functional) or `NFR-{n}` (non-functional) label per `playbooks/identifiers.md`
-- **Machine-readable Contract** — REQUIRED for every spec declaring a cross-trust-boundary interface. Artifact MUST be one of OpenAPI 3.1 / protobuf / AsyncAPI 2.6 / JSON Schema 2020-12 per `standards.md` Contract Formats (resolved by D-13+ Contract Format). Pointer line `**schema:** specs/schemas/<name>.<ext>` MUST be present. Internal-only interfaces record `**schema:** N/A — internal only` with justification.
+- **Machine-readable Contract** — REQUIRED for every spec declaring a cross-trust-boundary interface. Artifact MUST use a canonical form from `playbooks/standards.md` Contract Formats (resolved by D-13+ Contract Format). Pointer line `**schema:** specs/schemas/<name>.<ext>` MUST be present. Internal-only interfaces record `**schema:** N/A — internal only` with justification.
 - **Error semantics** — what failures look like, guarantees during failure, client handling
 - **Security considerations** — applicable trust boundary rules, validation, capability rules
 - **Conformance criteria** — every criterion MUST carry an `SC-{n}` label and MUST reference the `FR-` or `NFR-` it validates (format: `SC-3: validates FR-7, FR-9 — {concrete criterion}`)
@@ -46,7 +45,7 @@ Each critical specification MUST declare its proof class:
 - Every MUST/SHOULD/MAY sentence in the Contract section MUST cite `FR-{n}` or `NFR-{n}` (or be marked non-normative) — spec-creep detection
 - Every conformance criterion has an `SC-{n}` label and references the `FR-` / `NFR-` it validates
 - Every cross-trust-boundary spec has a non-empty Machine-readable Contract subsection
-- Non-Goals section is non-empty (or declares `NG-none` with justification)
+- Specs do not define bare `NG-{n}` / `NG-none` labels; spec-scope exclusions use prose or qualified `audit.md:NG-{n}` references
 - No contradictions with other specs
 - Error semantics cover all failure modes
 

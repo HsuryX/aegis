@@ -1,63 +1,78 @@
 # Claude Code harness
 
-This directory contains all Claude-Code-specific configuration for aegis: the `settings.json` permissions and hooks, plus project skills under `skills/`. The rest of the framework (`AGENTS.md`, `playbooks/`, `.agent-state/`) is agent-neutral and works with any agent that reads `AGENTS.md`.
+This directory contains Claude-Code-specific configuration for aegis. Read this file together with the shared [`../capability-matrix.md`](../capability-matrix.md), which is the authoritative summary of what is active now vs merely supported by the harness.
 
-## What Claude Code enforces natively
+## What this repo ships
 
-Claude Code is the most tightly integrated harness. It supports:
+This repo ships the canonical Claude Code settings source at `harness/claude-code/settings.json`.
 
-- **Deny rules** (`permissions.deny` in `settings.json`) — blocks Edit, Write, and NotebookEdit against protected patterns before the tool runs. The framework denies all three tool types for `AGENTS.md`, `CLAUDE.md` (symlink), `playbooks/**`, and `_legacy/**`; denies Edit and Write for `CHANGELOG.md`, `harness/claude-code/settings.json` (self-deny to prevent permission-grant), and linter/formatter config files. Both `AGENTS.md` and `CLAUDE.md` MUST be denied because symlink resolution is not guaranteed across versions.
-- **PreToolUse hooks** — run before Write/Edit/Bash and can block (exit code 2) on violations. The framework uses PreToolUse to enforce framework-file read-only protection (`AGENTS.md`, `playbooks/`, `_legacy/` — defense-in-depth beyond deny rules), file-size limits (800-line maximum), linter/formatter config immutability, and optional TDD enforcement when the test strategy decision (D-10) selects it.
-- **PostToolUse hooks** — run after Write/Edit/Bash and can auto-format, lint, type-check, or verify integrity. The framework uses PostToolUse to run the project formatter, linter, and type checker on changed files, and to detect protected-file modifications via Bash that the PreToolUse hook did not catch.
-- **PreCompact hook** — runs before `/compact` and reminds the agent to flush unsaved state to files. The framework uses it to prevent lossy compaction from losing audit entries, decisions, or gap entries.
-- **Stop hook** — runs at session end. The framework uses it to run the project build, remind the agent to update state files, and run batched verification.
-- **SessionStart hook** — runs at session start. The framework uses it to verify state files exist and display current phase + gate status.
-- **Skills** (`skills/`) — project-scoped commands invoked via `/{name}` in a Claude Code session. The framework ships five skills: `/verify`, `/decision`, `/gap`, `/audit-surface`, `/phase-status`.
+- **`permissions.deny` in the shipped `settings.json`** — source/template for blocking Edit, Write, and NotebookEdit against protected patterns before the tool runs once the file is installed into Claude Code's real loaded settings path. The current deny list covers `AGENTS.md`, `CLAUDE.md` (symlink), `playbooks/**`, `_legacy/**`, `CHANGELOG.md`, `harness/claude-code/settings.json`, and common linter / formatter config files.
+
+Until that install/sync step happens, the file under `harness/claude-code/` is shipped canonical source material, not an active repo-wired control. The rest of the Claude features below are native capabilities or shipped content, but they are not all wired as active guarantees here.
+
+## What Claude Code can support natively
+
+Claude Code is the most capable aegis harness from an enforcement perspective. It supports:
+
+- **Deny rules** (`permissions.deny` in `settings.json`) — supported natively; this repo ships the canonical template/source, but it is not active here until installed into Claude Code's loaded settings path.
+- **PreToolUse hooks** — can block on violations before Write/Edit/Bash.
+- **PostToolUse hooks** — can auto-format, lint, type-check, or verify after a tool runs.
+- **PreCompact hook** — can remind the agent to flush state before context compression.
+- **Stop hook** — can run end-of-session verification.
+- **SessionStart hook** — can initialize context at session start.
+- **Skills** (`skills/`) — project-scoped commands such as `/verify`, `/decision`, `/gap`, `/audit-surface`, and `/phase-status`, subject to Claude Code's local skill-path configuration.
+
+## What is not wired here yet
+
+- **Hooks are not currently configured in the shipped `harness/claude-code/settings.json` template/source.** The cookbook documents them, but this repo does not presently claim them as active protection.
+- **OS-level read-only is documented but not applied by the repo.** If a maintainer wants Bash-resistant protection, they must run `chmod -R a-w AGENTS.md playbooks/ CLAUDE.md _legacy/` themselves.
+- **CI parity is not active in this repo.** aegis ships CI templates under `harness/ci/`, but there is no live workflow under repo-root `.github/workflows/`.
 
 ## What Claude Code cannot enforce
 
-- **Symlink transparency is version-dependent.** Some Claude Code versions resolve symlinks before applying deny rules, others do not. The framework's mitigation is to deny BOTH the symlink name (`CLAUDE.md`) AND the target name (`AGENTS.md`) explicitly in `settings.json` and the PreToolUse hook script.
+- **Symlink transparency is version-dependent.** Some Claude Code versions resolve symlinks before applying deny rules, others do not. The framework's mitigation is to deny BOTH the symlink name (`CLAUDE.md`) AND the target name (`AGENTS.md`) explicitly in the installed settings file and the PreToolUse hook script.
 - **Bash hook timeouts fail open.** If a PreToolUse hook exceeds its timeout (default 60 seconds), Claude Code kills the process and treats the call as non-blocking. The framework MUST set realistic timeouts (under 5 seconds for cheap checks) and MUST avoid long-running hook scripts.
 - **Cross-session state integrity is not tool-enforced.** No hook runs between sessions. The Session Start Protocol in `AGENTS.md` is the framework's own convention for verifying state consistency — Claude Code does not block a session with inconsistent state.
-- **Transitive Bash circumvention.** PreToolUse hooks see the Write/Edit tool call but not the content of shell commands. A `sed -i` or shell redirect can bypass Write deny rules. The framework uses a PostToolUse Bash hook that compares file checksums to detect this after the fact, plus filesystem-level `chmod -R a-w` as defense in depth.
+- **Transitive Bash circumvention.** `permissions.deny` protects tool writes, not arbitrary shell writes. A `sed -i` or shell redirect can still modify files unless the maintainer adds OS-level read-only protection and/or a Bash-review hook.
 
 ## How to compensate
 
-- **Manual `/verify` at phase boundaries.** Before advancing a phase, invoke the `/verify` skill to run the full Verification Sequence and record output. This is the last line of defense if hooks fail open.
-- **OS-level read-only protection.** `chmod -R a-w AGENTS.md playbooks/` makes the framework files read-only at the filesystem level, preventing even Bash circumvention. When the framework author needs to edit, they temporarily restore write permission.
-- **CI gates mirror local hooks.** A CI job SHOULD run the same formatter, linter, type checker, and test suite that the PostToolUse hook runs locally, so protection is enforced even when the agent runs on an unconfigured workstation.
+- **Manual `python3 validate.py` at phase boundaries.** This repo ships the validator now; use it even if no hooks are wired.
+- **Optional `/verify` skill.** If Claude is configured to load the repo's skills, `/verify` is a convenient wrapper. If not, run the Verification Sequence manually.
+- **OS-level read-only protection.** `chmod -R a-w AGENTS.md playbooks/ CLAUDE.md _legacy/` adds a filesystem backstop against Bash circumvention. When the framework author needs to edit, they temporarily restore write permission.
+- **CI gates.** Install a workflow from `harness/ci/README.md` if you want a repo-level backstop for formatter/linter/type-check/test/validator runs.
 - **Fresh-context adversarial review at phase boundaries.** The hooks cannot verify design correctness — a separate-agent review from `playbooks/01-design.md`, `02-spec.md`, and `03-implement.md` is the framework's own compensation for this limitation.
 
 ## Files in this harness
 
-- `settings.json` — permissions (deny rules) and hook wiring; the canonical location.
+- `settings.json` — canonical shipped source/template for permissions (deny rules) and any future hook wiring; install or sync it into Claude Code's loaded settings path to make it active.
 - `skills/` — five Claude Code skills (`/verify`, `/decision`, `/gap`, `/audit-surface`, `/phase-status`). Each has its own `SKILL.md`.
 - `hooks-cookbook.md` — Claude-Code-specific hook examples, permission syntax, LSP configuration, MCP examples, skill authoring constraints, and task system guidance.
 
 ## Minimum Claude Code version
 
-aegis requires Claude Code 2.x or later. Earlier versions lack PreCompact and SessionStart hooks.
+aegis requires Claude Code 2.x or later. Earlier versions lack the full hook surface described above.
 
 ## Setup checklist
 
-New project adoption — run these steps after copying aegis into the target repo. Claude Code has the fullest native enforcement of the three harnesses; most of this is verification rather than new configuration.
+New project adoption — run these steps after copying aegis into the target repo. Claude Code has the strongest native support, but this repo only ships the canonical `permissions.deny` template by default.
 
 ### 1. File permissions
 
 ```bash
 chmod +x tools/bootstrap.sh validate.py
-chmod -R a-w AGENTS.md playbooks/ CLAUDE.md
+chmod -R a-w AGENTS.md playbooks/ CLAUDE.md _legacy/
 ```
 
-OS-level read-only is belt-and-suspenders on top of `settings.json` `permissions.deny`. Both layers are recommended because `permissions.deny` does not block Bash subprocess writes.
+OS-level read-only is optional belt-and-suspenders on top of an installed `permissions.deny` configuration. Both layers are recommended because `permissions.deny` does not block Bash subprocess writes.
 
-### 2. Verify `settings.json` deny list
+### 2. Install and verify the deny list
 
-After `tools/bootstrap.sh`, confirm `harness/claude-code/settings.json` includes deny rules for at least: `AGENTS.md`, `CLAUDE.md`, `playbooks/**`, `harness/claude-code/settings.json` itself. See `hooks-cookbook.md` § Settings template for the canonical contents.
+After `tools/bootstrap.sh`, install or sync `harness/claude-code/settings.json` into the real Claude Code loaded settings path you use (for example repo-root `.claude/settings.json`, if that is your chosen location), then confirm the active file includes deny rules for at least: `AGENTS.md`, `CLAUDE.md`, `playbooks/**`, `_legacy/**`, and `harness/claude-code/settings.json` itself. See `hooks-cookbook.md` § Settings template for the canonical contents.
 
-### 3. Verify hooks
+### 3. Optionally wire hooks
 
-Confirm the recommended hook set is wired in `settings.json`:
+If you want more than the default deny-list protection, wire the recommended hook set from `hooks-cookbook.md` into the active Claude Code settings file, using `harness/claude-code/settings.json` as the canonical source:
 
 - SessionStart — context initialization + scope-guard warning
 - PreCompact — state flush reminder
@@ -67,23 +82,23 @@ Confirm the recommended hook set is wired in `settings.json`:
 - Stop — build + Evidence-cell verifiability + state-update reminder
 - commit-msg — conventional-commits + `Implements:` trailer enforcement
 
-See `hooks-cookbook.md` for full recipes.
+If you skip this step, the matrix stays truthful: Claude still has native hook support, but your repo is using only the deny rules you installed, not hooks.
 
 ### 4. Skill installation
 
-Confirm skills are loadable via `/{name}`:
+Confirm skills are loadable via `/{name}` if you want the convenience layer:
 
 ```bash
 ls harness/claude-code/skills/
 # Expected: audit-surface, decision, gap, phase-status, verify
 ```
 
-Each skill has a `SKILL.md` defining when Claude invokes it. Skills are auto-discovered from the configured skills directory; confirm Claude Code's skill path points to `harness/claude-code/skills/`.
+Each skill has a `SKILL.md` defining when Claude invokes it. Availability depends on Claude Code's configured skill path.
 
 ### 5. CI gates
 
-Even with native Claude Code protection, CI MUST replicate the same checks so protection holds when other agents or manual edits produce PRs. Use the GitHub Actions skeleton in `harness/codex/README.md` § CI gates as a starting point (identical step list).
+Even with native Claude Code protection, CI is still the best repo-level backstop for PRs from other agents or manual edits. Use `harness/ci/README.md` and the template under `harness/ci/` as the starting point.
 
 ### 6. Session-start discipline
 
-SessionStart hooks automate context initialization, but the agent still MUST execute the Session Start Protocol manually — hooks cannot replace the read-and-verify discipline. The hook reminds; the agent does.
+SessionStart hooks can remind, but the agent still MUST execute the Session Start Protocol manually — hooks cannot replace the read-and-verify discipline. The hook reminds; the agent does.

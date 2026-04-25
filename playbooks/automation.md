@@ -1,16 +1,28 @@
 <!--
 SYNC-IMPACT
-- version: 0.0.0 → 1.0.0
-- bump: MAJOR
-- date: 2026-04-19
-- rationale: Initial release — establishes the v1.0.0 baseline for the aegis governance framework. All rules in AGENTS.md and playbooks/ are introduced at this version; subsequent releases follow the Amendment Protocol in AGENTS.md and the Versioning Policy in CHANGELOG.md.
-- downstream_review_required: []
+- version: 1.0.0 → 1.1.0
+- bump: MINOR
+- date: 2026-04-25
+- rationale: Framework refinement release. Adds the bounded-change 0 -> 3 path for already-governed work (`00-audit.md`); the harness security-claim model with explicit control-class (`Executable` / `Backstop` / `Advisory`) and activation-state (`Active now` / `Shipped but inactive` / `Not available here`) classification (`harness/capability-matrix.md`); the Canonical Dependency Edges DAG seeding the Whole-System Composition Check (`01-design.md`); the Adversarial Review Protocol Per-phase timing-hooks table (`principles-gates.md`); the Scope-Proportional gate-protocol mini-matrix (`principles-gates.md` Scope-Proportional Ceremony); the `phase regression` glossary entry; and `validate.py check_traceability` — a file-level `Implements:`/`Covers:` rollup (warning-only, vacuous on the framework repo itself). Extends Required Behaviors #7 with an archive-decay re-evaluation rule for consulted archive entries >= 12 months old (`principles.md`). Expands the existing Cold Read perspective with a concrete protocol (`principles-gates.md`). Adds a date-only UTC variant to the scope-reduction sign-off format for `micro`/`small` projects (`00-audit.md` ceremony matrix + `release-readiness.md` checklist); the full git-email anchored form remains for `standard`/`large`. Relaxes Session Start Protocol Step 3 — the integrity block now accepts any form that cites countable or tool-checkable evidence; the prior templated form is preserved as a reference example. Promotes the implementation-boundary rule to a dedicated `## Implementation Boundary` section in `AGENTS.md` (v1.0.0 carried the rule as a paragraph below the Phase Gates table); the new section's bounded-change summary paragraph points at `00-audit.md` for the full Bounded-Change Rule; surfaces additional Phase 1 gate items (Authority model, Whole-System Composition Check, threat-model applicability) and Phase 2 Proof-class declaration in the `AGENTS.md` Phase Gates table; decouples the Phase 1 threat-model gate from `specs/threat-model.md` artifact-existence (binds to whichever path D-5 declares); reformats the `AGENTS.md` Workspace Discipline second paragraph from a single run-on into a 6-bullet list (preserving v1.0.0 content and adding a Bash-subprocess-gap caveat); trims the scope-reduction marker phrase list (`validate.py` `_DEFERRAL_PHRASES`, mirrored in `standards.md` / `03-implement.md` / `harness/cursor/.cursor/rules/phase-3.mdc`) to unambiguous multi-word forms only, dropping false-positive-prone tokens. De-duplicates the Verdict Discipline definition (`AGENTS.md` is sole canonical owner; glossary holds a one-paragraph redirect); removes the four per-phase `## Adversarial Gate Check` stanzas (replaced by the new Per-phase timing-hooks table); removes the redundant placeholder grep at `02-spec.md` Quality Checks (the Phase Gate scan is a strict superset). Compresses Codex and Cursor harness READMEs by deferring universal-backstop guidance to `harness/capability-matrix.md`. Required Behaviors #8 grep formula relocates from `principles.md` body to `automation.md` Lessons-Gap Backstop. Removes the `validate.py` Verification Coverage Matrix anchor-diversity check; its enforcement contract is already covered by check 7 (evidence verifiability). SemVer MINOR — additive and refinement; no rule becomes stricter than v1.0.0 in a way that invalidates prior compliance.
+- downstream_review_required:
+  - README.md
+  - ONBOARDING.md
+  - CHANGELOG.md
+  - harness/capability-matrix.md
+  - harness/claude-code/README.md
+  - harness/codex/README.md
+  - harness/cursor/README.md
+  - harness/ci/README.md
+  - harness/claude-code/hooks-cookbook.md
+  - harness/claude-code/skills/phase-status/SKILL.md
+  - validate.py
+  - tools/bootstrap.sh
 -->
 ---
 id: playbooks/automation
 title: Automation
-version: 1.0.0
-last_reviewed: 2026-04-19
+version: 1.1.0
+last_reviewed: 2026-04-25
 applies_to:
   - phase: all
 severity: advisory
@@ -28,7 +40,7 @@ supersedes: null
 
 # Automation
 
-Projects SHOULD automate framework enforcement rather than rely on manual discipline alone. Automation is the difference between a rule that is "documented" and a rule that is "enforced" — documentation requires remembering and applying, while automation makes violations mechanically impossible (or visibly detected). This playbook defines the agent-neutral automation principles. For concrete implementation in a specific harness, see the per-harness cookbooks referenced below.
+Projects SHOULD automate framework enforcement rather than rely on manual discipline alone. Automation is the difference between a rule that is "documented" and a rule that is "enforced" — documentation requires remembering and applying, while automation makes violations mechanically impossible (or visibly detected). This playbook defines the agent-neutral automation principles. For the current repo's actual harness status — especially each control's class (`Executable` / `Backstop` / `Advisory`) and activation state — see [`../harness/capability-matrix.md`](../harness/capability-matrix.md).
 
 > **Terminology.** This playbook uses terms defined in [`glossary.md`](./glossary.md): **gap**, **harness**, **verify**. "Verify" always means tool-checked with recorded evidence — automation is the mechanism that makes verification cheap and repeatable.
 
@@ -77,7 +89,7 @@ A hook that silently no-ops on error is worse than no hook — it gives the illu
 
 ## Mechanical validation
 
-`./validate.py` at the repo root automates the `[M]` portion of the adversarial review protocol. It is harness-agnostic (Python 3 stdlib only, no external dependencies) and SHOULD be run before every release and, where the harness supports it, wired as a `PostToolUse` or pre-commit hook. The script performs seven deterministic checks:
+`./validate.py` at the repo root automates the `[M]` portion of the adversarial review protocol. It is harness-agnostic (Python 3 stdlib only, no external dependencies) and SHOULD be run before every release and, where the harness supports it, wired as a `PostToolUse` or pre-commit hook. The exact check list lives in `validate.py` itself and may grow over time; the summary below is representative, not canonical:
 
 1. Frontmatter on `AGENTS.md` and every `playbooks/*.md` parses and carries all required fields (`id`, `title`, `version`, `last_reviewed`, `applies_to`, `severity`, `mechanical_items`, `judgment_items`, `mixed_items`, `references`, `supersedes`). Playbooks with no gate items declare `mechanical_items: 0`, `judgment_items: 0`, `mixed_items: 0`. Playbooks with no superseded predecessor declare `supersedes: null`.
 2. Every `references:` entry resolves to an existing file path.
@@ -85,7 +97,7 @@ A hook that silently no-ops on error is worse than no hook — it gives the illu
 4. Every state file in `.agent-state/` begins with a `<!-- SCHEMA: ... -->` block.
 5. `CLAUDE.md` is a symlink to `AGENTS.md` (AGENTS.md is the canonical entry file).
 6. Version agrees across `AGENTS.md` frontmatter, `AGENTS.md` body banner, every playbook frontmatter, and the top versioned section of `CHANGELOG.md`.
-7. Every Evidence cell in every Verification Coverage Matrix block in `.agent-state/phase.md` (and `phase-archive.md` when present) carries a verifiable reference per `principles.md` Verification Coverage Matrix D5: `file.md:line` | `sha256:{64 hex}` | `#session-YYYY-MM-DD-slug` | `<subagent:name>` | literal `(pending)` when the row's Result cell is also `pending`. Prose-only cells fail — a filled-in cell with hand-wave ("looked fine", "tests passed") is the gameability vector this check closes.
+7. Every Evidence cell in every Verification Coverage Matrix block in `.agent-state/phase.md` (and `phase-archive.md` when present) carries a verifiable reference per `principles-gates.md` Verification Coverage Matrix: `file.md:N` | `file.md#anchor` | `sha256:{64 hex}` | `#session-YYYY-MM-DD-slug` | `<subagent:NAME>` | literal `(pending)` when the row's Result cell is also `pending`. Prose-only cells fail — a filled-in cell with hand-wave ("looked fine", "tests passed") is the gameability vector this check closes.
 
 Exit code 0 means clean; non-zero prints a bulleted failure list on stderr. The validator covers `[M]`-class checks only — `[J]` judgment items remain the reviewer's responsibility per Core Principle 1 ("rules that CANNOT be fully codified").
 
@@ -102,6 +114,17 @@ The validator SHOULD run at four cadences, each serving a different quality-cont
 
 For human-facing invocation guidance (how to run, how to read output, when to invoke), see the README Validator subsection.
 
+### Lessons-Gap Backstop
+
+The Release Readiness gate enforces a quantitative backstop on the Lessons → Framework-gap feedback loop in `principles.md` Required Behaviors #8. Mechanical formula:
+
+```
+L = grep -c '^### L-' .agent-state/lessons.md
+F = grep -cE '^\*\*Type:\*\*\s*framework\s*$' .agent-state/gaps.md
+```
+
+When `L − F > 5` (five or more lessons accumulated without any resulting framework-gap proposal), the Release Readiness gate MUST emit `Hold` until either (a) the agent drafts `framework` gaps for the recurring lesson patterns, or (b) the agent records an explicit `[J] — RISK_ACCEPTED_BY_USER` justification per `principles-gates.md` Adversarial Review Protocol citing user acceptance that the lessons do not indicate a framework defect. The bounded threshold prevents silent accumulation that an unbounded "SHOULD approximately track" rule would not catch.
+
 ## Principle → Rule → Enforcement Matrix
 
 This matrix is the reverse index: given any aegis discipline, it names which rule citation carries the discipline and where the mechanical enforcement lives. Use it to answer "where is X enforced?" without reading every playbook.
@@ -111,36 +134,37 @@ This matrix is the reverse index: given any aegis discipline, it names which rul
 | Verdict Discipline | `AGENTS.md` Verdict Discipline | Audit review at phase gate; glossary canonical enum | `00-audit.md` Phase Gate; `glossary.md` verdict |
 | Authority Discipline | `AGENTS.md` Authority Discipline | Whole-System Composition Check; Naming Table grep | `01-design.md` Composition Check; `03-implement.md` Post-Change Verification naming check; PreToolUse hook in `hooks-cookbook.md` |
 | Traceability | `AGENTS.md` Session Start step 6; `03-implement.md` Traceability | Commit-msg hook + grep of `Implements:` / `Covers:` trailers | `hooks-cookbook.md` commit-msg hook; `03-implement.md` Post-Change Verification |
-| Phase gates | `AGENTS.md` Phase Gates | Three-tier criteria + gate outcome; Verification Coverage Matrix | `principles.md` Gate Outcome Vocabulary; per-phase playbook Phase Gate section |
-| Verification Coverage | `principles.md` Verification Coverage Matrix | 5-perspective matrix with verifiable Evidence cells; Stop hook; `validate.py` check #7 | `principles.md` Verification Coverage Matrix; `hooks-cookbook.md` Stop hook; `validate.py` `check_evidence_verifiability` |
+| Phase gates | `AGENTS.md` Phase Gates | Three-tier criteria + gate outcome; Verification Coverage Matrix | `principles-gates.md` Gate Outcome Vocabulary; per-phase playbook Phase Gate section |
+| Verification Coverage | `principles-gates.md` Verification Coverage Matrix | 5-perspective matrix with verifiable Evidence cells; Stop hook; `validate.py` check #7 | `principles-gates.md` Verification Coverage Matrix; `hooks-cookbook.md` Stop hook; `validate.py` `check_evidence_verifiability` |
 | File-size / placement | `standards.md` Code Quality; `01-design.md` D-11 | PreToolUse hook (content size); file-path grep at gate | `hooks-cookbook.md` PreToolUse Write; `03-implement.md` Post-Change Verification |
 | Secret leakage | `standards.md` Security; `AGENTS.md` Workspace Discipline | PreToolUse hook (secret regex); `.gitignore`; CI secret scan | `hooks-cookbook.md` PreToolUse Write/Edit; project CI |
-| Framework read-only | `AGENTS.md` Workspace Discipline | `permissions.deny` list; OS `chmod -R a-w` | `harness/claude-code/settings.json`; harness README chmod step |
+| Framework read-only | `AGENTS.md` Workspace Discipline | installed Claude Code `permissions.deny` derived from the canonical settings template; optional OS `chmod -R a-w AGENTS.md playbooks/ CLAUDE.md _legacy/` elsewhere | `harness/claude-code/settings.json`; `harness/capability-matrix.md` |
 | Frontmatter schema | `automation.md` Mechanical validation | `validate.py` checks 1-3 | `validate.py` |
-| Version consistency | `AGENTS.md` Amendment Protocol | `validate.py` check 6 | `validate.py` |
-| CLAUDE.md symlink | `AGENTS.md` Version banner | `validate.py` check 5 | `validate.py` |
+| Version consistency | `principles-gates.md` Amendment Protocol | `validate.py` check 6 | `validate.py` |
+| CLAUDE.md symlink | `AGENTS.md` operational entrypoint banner | `validate.py` check 5 | `validate.py` |
 | State SCHEMA presence | `automation.md` Mechanical validation | `validate.py` check 4 | `validate.py` |
-| Test-spec traceability | `03-implement.md` Traceability → Test traceability | grep of `Covers:` in commit/name/comment | `03-implement.md` Post-Change Verification; optional CI job |
+| Test-spec traceability | `03-implement.md` Traceability → Test traceability | grep/validator check of slugged test-name suffixes + in-file `Covers:` comments (commit-level `Covers:` is metadata only) | `03-implement.md` Post-Change Verification; `validate.py` check 13; optional CI job |
 | STRIDE threat model | `security-threat-model.md` | Mechanical boundary/STRIDE-letter grep at Phase 1 gate | `01-design.md` Design Closure Gate; `security-threat-model.md` Mechanical checks |
 | Conventional commits | `standards.md` Git Conventions; `03-implement.md` Traceability → Commit message format | commit-msg git hook (regex + trailer) | `hooks-cookbook.md` commit-msg hook |
 | Coverage targets | `standards.md` Testing; `01-design.md` D-10 | Per-layer test runners with `--cov-fail-under` | `03-implement.md` Post-Change Verification; D-10 decision entry |
 | Accessibility | `standards.md` Accessibility; `01-design.md` D-13+ Accessibility Model | axe-core / pa11y CI scans; manual audit cadence | D-13+ decision entry; CI config |
 | Placeholder scan | `01-design.md` Design Closure Gate; `02-spec.md` Quality Checks | `grep -rnE 'TBD|TODO|FIXME'` at gate | Per-phase Phase Gate / Quality Checks |
-| Adversarial review | `principles.md` Adversarial Review Protocol | Subagent in fresh context at gate | Per-phase Adversarial Gate Check section |
+| Adversarial review | `principles-gates.md` Adversarial Review Protocol (incl. Per-phase timing hooks table) | Subagent in fresh context at gate | Phase Gate intro of each phase playbook references the protocol |
 
 ## Per-harness implementation pointers
 
-The principles above are agent-neutral. Concrete implementation depends on the harness:
+The principles above are agent-neutral. The current repo wiring is not symmetrical across harnesses. Read [`../harness/capability-matrix.md`](../harness/capability-matrix.md) before assuming parity.
 
-| Harness | Native hook support | Implementation reference |
+| Harness | What this repo actually ships now | Implementation reference |
 |---|---|---|
-| **Claude Code** | Full (PreToolUse, PostToolUse, PreCompact, Stop, SessionStart) | `harness/claude-code/hooks-cookbook.md` |
-| **Codex** | None (no hook mechanism) — relies on agent self-discipline + OS `chmod` + CI | `harness/codex/README.md` |
-| **Cursor** | None (rules are advisory) — relies on CI + Git pre-commit hooks | `harness/cursor/README.md` |
+| **Claude Code** | canonical `settings.json` source/template + hook recipes; nothing is active until installed into Claude Code's loaded settings path | `harness/capability-matrix.md`, `harness/claude-code/README.md`, `harness/claude-code/hooks-cookbook.md` |
+| **Codex** | documentation + optional `config.toml.example`; no active blocking control | `harness/capability-matrix.md`, `harness/codex/README.md` |
+| **Cursor** | advisory `.mdc` templates under `harness/cursor/.cursor/rules/`; not active at repo-root `.cursor/rules/` | `harness/capability-matrix.md`, `harness/cursor/README.md` |
+| **CI** | GitHub Actions example only; no live workflow under `.github/workflows/` in this repo | `harness/capability-matrix.md`, `harness/ci/README.md` |
 
-For Claude Code specifically, the cookbook covers hook stdin JSON shape, exit code semantics, matcher regex behavior, the recommended hook set (SessionStart, PreCompact, PostToolUse, PreToolUse Write/Edit, PostToolUse Bash, Stop), native `permissions.deny` write protection, the `settings.json` template, LSP plugin configuration, skill authoring constraints, and hook troubleshooting.
+For Claude Code specifically, the cookbook covers hook stdin JSON shape, exit code semantics, matcher regex behavior, the recommended hook set (SessionStart, PreCompact, PostToolUse, PreToolUse Write/Edit, PostToolUse Bash, Stop), native `permissions.deny` write protection when the template is installed, the `settings.json` template, LSP plugin configuration, skill authoring constraints, and hook troubleshooting.
 
-For Codex and Cursor, compensation strategies dominate — the agent is trusted to self-regulate, with OS-level `chmod -R a-w AGENTS.md playbooks/` and CI gates as the backstop.
+For Codex and Cursor, compensation strategies dominate — the agent is trusted to self-regulate unless the adopter adds OS-level `chmod -R a-w AGENTS.md playbooks/ CLAUDE.md _legacy/`, git hooks, and CI.
 
 ## External knowledge and services (MCP)
 

@@ -1,22 +1,34 @@
 <!--
 SYNC-IMPACT
-- version: 0.0.0 → 1.0.0
-- bump: MAJOR
-- date: 2026-04-19
-- rationale: Initial release — establishes the v1.0.0 baseline for the aegis governance framework. All rules in AGENTS.md and playbooks/ are introduced at this version; subsequent releases follow the Amendment Protocol in AGENTS.md and the Versioning Policy in CHANGELOG.md.
-- downstream_review_required: []
+- version: 1.0.0 → 1.1.0
+- bump: MINOR
+- date: 2026-04-25
+- rationale: Framework refinement release. Adds the bounded-change 0 -> 3 path for already-governed work (`00-audit.md`); the harness security-claim model with explicit control-class (`Executable` / `Backstop` / `Advisory`) and activation-state (`Active now` / `Shipped but inactive` / `Not available here`) classification (`harness/capability-matrix.md`); the Canonical Dependency Edges DAG seeding the Whole-System Composition Check (`01-design.md`); the Adversarial Review Protocol Per-phase timing-hooks table (`principles-gates.md`); the Scope-Proportional gate-protocol mini-matrix (`principles-gates.md` Scope-Proportional Ceremony); the `phase regression` glossary entry; and `validate.py check_traceability` — a file-level `Implements:`/`Covers:` rollup (warning-only, vacuous on the framework repo itself). Extends Required Behaviors #7 with an archive-decay re-evaluation rule for consulted archive entries >= 12 months old (`principles.md`). Expands the existing Cold Read perspective with a concrete protocol (`principles-gates.md`). Adds a date-only UTC variant to the scope-reduction sign-off format for `micro`/`small` projects (`00-audit.md` ceremony matrix + `release-readiness.md` checklist); the full git-email anchored form remains for `standard`/`large`. Relaxes Session Start Protocol Step 3 — the integrity block now accepts any form that cites countable or tool-checkable evidence; the prior templated form is preserved as a reference example. Promotes the implementation-boundary rule to a dedicated `## Implementation Boundary` section in `AGENTS.md` (v1.0.0 carried the rule as a paragraph below the Phase Gates table); the new section's bounded-change summary paragraph points at `00-audit.md` for the full Bounded-Change Rule; surfaces additional Phase 1 gate items (Authority model, Whole-System Composition Check, threat-model applicability) and Phase 2 Proof-class declaration in the `AGENTS.md` Phase Gates table; decouples the Phase 1 threat-model gate from `specs/threat-model.md` artifact-existence (binds to whichever path D-5 declares); reformats the `AGENTS.md` Workspace Discipline second paragraph from a single run-on into a 6-bullet list (preserving v1.0.0 content and adding a Bash-subprocess-gap caveat); trims the scope-reduction marker phrase list (`validate.py` `_DEFERRAL_PHRASES`, mirrored in `standards.md` / `03-implement.md` / `harness/cursor/.cursor/rules/phase-3.mdc`) to unambiguous multi-word forms only, dropping false-positive-prone tokens. De-duplicates the Verdict Discipline definition (`AGENTS.md` is sole canonical owner; glossary holds a one-paragraph redirect); removes the four per-phase `## Adversarial Gate Check` stanzas (replaced by the new Per-phase timing-hooks table); removes the redundant placeholder grep at `02-spec.md` Quality Checks (the Phase Gate scan is a strict superset). Compresses Codex and Cursor harness READMEs by deferring universal-backstop guidance to `harness/capability-matrix.md`. Required Behaviors #8 grep formula relocates from `principles.md` body to `automation.md` Lessons-Gap Backstop. Removes the `validate.py` Verification Coverage Matrix anchor-diversity check; its enforcement contract is already covered by check 7 (evidence verifiability). SemVer MINOR — additive and refinement; no rule becomes stricter than v1.0.0 in a way that invalidates prior compliance.
+- downstream_review_required:
+  - README.md
+  - ONBOARDING.md
+  - CHANGELOG.md
+  - harness/capability-matrix.md
+  - harness/claude-code/README.md
+  - harness/codex/README.md
+  - harness/cursor/README.md
+  - harness/ci/README.md
+  - harness/claude-code/hooks-cookbook.md
+  - harness/claude-code/skills/phase-status/SKILL.md
+  - validate.py
+  - tools/bootstrap.sh
 -->
 ---
 id: playbooks/01-design
 title: Phase 1: Design
-version: 1.0.0
-last_reviewed: 2026-04-19
+version: 1.1.0
+last_reviewed: 2026-04-25
 applies_to:
   - phase: 1-design
 severity: normative
 mechanical_items: 4
 judgment_items: 28
-mixed_items: 3
+mixed_items: 1
 references:
   - AGENTS.md
   - playbooks/principles.md
@@ -43,9 +55,9 @@ Ordered by dependency — earlier decisions constrain later ones. Each MUST be r
 
 1. **Architecture** — subsystems, boundaries, dependency direction
 2. **Authority model** — what owns truth for each domain concept. For **micro and small scope** projects, D-2 MAY be simplified to a single-paragraph owner-per-concept statement without a formal authority-map diagram, provided Authority Discipline (no duplicate truth) is still respected. For **standard and large scope**, D-2 REQUIRES the full authority map — one entry per durable concept with owner, dependencies, and invariants; the map MUST be consulted by the Whole-System Composition Check.
-3. **Public contracts** — exact interfaces, not vague descriptions; include field ordering conventions. When the project exposes any cross-trust-boundary interface, the contract MUST have both a **prose contract** (markdown `Contract` section in the spec) AND a **machine-readable contract** in one of the canonical forms listed in `standards.md` Contract Formats (the sole canonical menu — do not re-enumerate here). The D-13+ Contract Format candidate decision (see below) resolves which form. Internal-only interfaces MAY record `schema: N/A — internal only` with a one-line justification.
+3. **Public contracts** — exact interfaces, not vague descriptions; include field ordering conventions. When the project exposes any cross-trust-boundary interface, the contract MUST have both a **prose contract** (markdown `Contract` section in the spec) AND a **machine-readable contract** in one of the canonical forms listed in `standards.md` Contract Formats (the sole canonical menu — do not re-enumerate here). The D-13+ Contract Format candidate decision (see below) resolves which form. Internal-only interfaces MAY record `schema: N/A — internal only` with a one-line justification. Operator-facing prose contracts that D-13 explicitly classifies as `schema: N/A — operator-facing prose contract` are also exempt from the machine-readable requirement.
 4. **Data model** — canonical object shapes, persistence format, wire format; include field and column ordering conventions
-5. **Security model** — trust boundaries, secret management, authentication, authorization, input validation strategy. When the `playbooks/security-threat-model.md` applicability conditions are met (secrets, user data, or cross-trust-boundary communication), D-5 MUST link to a full STRIDE threat model artifact at `specs/threat-model.md`. Projects qualifying for the N/A escape record `threat model: N/A — {justification}` in D-5.
+5. **Security model** — trust boundaries, secret management, authentication, authorization, input validation strategy. When any `playbooks/security-threat-model.md` applicability condition is met, D-5 MUST link to a full STRIDE threat model artifact at `specs/threat-model.md`. Projects qualifying for the N/A escape record `threat model: N/A — {justification}` in D-5 and must state why none of the four applicability conditions are present.
 6. **Error and recovery model** — failure semantics, degraded states, recovery order and preconditions
 7. **Naming model** — canonical term for each durable concept; populate the Naming Table (depends on concepts from 1–6 being identified)
 8. **Configuration model** — what is configurable, what is not, where configuration lives, environment parity
@@ -54,12 +66,29 @@ Ordered by dependency — earlier decisions constrain later ones. Each MUST be r
 11. **Repository structure** — directory layout reflecting architecture, not history (depends on all above). REQUIRED for standard and large scope; MAY be `not-applicable` for small scope per `00-audit.md` Project Scope Classification (small scope projects with an established layout need not re-decide it as a formal D-11 entry)
 12. **Documentation structure** — what documents exist (including README), what each one owns, what format (depends on all above). REQUIRED for standard and large scope; MAY be `not-applicable` for small scope per `00-audit.md` Project Scope Classification
 
-The agent MUST settle decisions in dependency order; the agent MUST NOT open a downstream decision while its upstream dependency is still open, unless parallel evaluation is necessary to resolve a circular dependency.
+### Canonical Dependency Edges
+
+The "ordered by dependency" claim above is concrete: the canonical edges below hold for every project. They seed the `Downstream impact` graph that the Whole-System Composition Check at the bottom of this playbook toposorts. D-13+ decisions extend this graph by populating their own `Downstream impact:` field per the Decision Entry Format.
+
+| From | Constrains (target decisions) | Reason |
+|---|---|---|
+| D-1 Architecture | D-2, D-3, D-4, D-5, D-6, D-10, D-11 | Subsystems and dependency direction define the targets every later decision binds to |
+| D-3 Public contracts | D-4, D-7, D-10 | Wire format constrains data model; contract names enter the Naming Table; contract tests anchor the test strategy |
+| D-4 Data model | D-7, D-11 | Data-shape names enter the Naming Table; persistence layout enters repository structure |
+| D-5 Security model | D-6, D-7, D-9, D-10 | Trust boundaries inform error semantics; security terms enter the Naming Table; audit logging shapes observability; trust-boundary coverage floor (95%) drives the test strategy |
+| D-6 Error / recovery | D-7, D-9, D-10 | Error names enter the Naming Table; observable error events enter observability; recovery paths drive test coverage |
+| D-1..D-6 (collectively) | D-7 Naming model | Per the inline annotation on D-7 — concepts to name are gathered from the earlier decisions |
+| D-1..D-10 (collectively) | D-11 Repository structure | Per the inline annotation on D-11 — directory layout reflects the full architecture |
+| D-1..D-11 (collectively) | D-12 Documentation structure | Per the inline annotation on D-12 — what documents exist depends on the entire architecture |
+
+D-8 (Configuration) and D-9 (Observability) are largely peers and MAY be opened after D-1 is settled. D-9 SHOULD follow D-5 when audit logging is in scope (security events drive observability targets). Both feed into D-11 and D-12 via the collective edges above.
+
+The agent MUST settle decisions in dependency order per these edges; the agent MUST NOT open a downstream decision while its upstream dependency is still open, unless parallel evaluation is necessary to resolve a circular dependency. When invoking the parallel-evaluation exception, the agent MUST record (a) which two or more decisions form the cycle (cite IDs), (b) why neither side can be settled first, and (c) the resolution criterion that closes the cycle. The record MUST appear in the **Unresolved concerns** field of every involved decision entry; without that record, parallel evaluation is silent deferral and the gate fails.
 
 Additional project-specific decisions SHOULD be added as D-13+ when the project scope demands them. Common candidates include:
 
 - **Contract Format** — selects which machine-readable form (from the canonical menu in `standards.md` Contract Formats) is authoritative for the project's external interfaces. REQUIRED when the project exposes any cross-trust-boundary interface; MAY be omitted for purely internal tools. Links back to D-3 and to `standards.md` Contract Formats (the single source of truth for the format list).
-- **Subsystem Ownership** — for **standard and large scope** with multiple subsystems or multiple team members, D-13+ MUST declare which owner (person, team, or agent) is responsible for each subsystem boundary (derived from D-1 Architecture). Ownership determines review assignment and gate approval in the Multi-Agent Handoff Protocol (`AGENTS.md`). Micro and small scope MAY omit this decision.
+- **Subsystem Ownership** — for projects meeting ALL of the `principles-conditional.md` Multi-Agent Handoff Protocol conditions — scope ∈ {`standard`, `large`}, ≥ 2 subsystems, and ≥ 3 distinct agents or team members across the project's lifetime — D-13+ MUST declare which owner (person, team, or agent) is responsible for each subsystem boundary (derived from D-1 Architecture). Ownership determines review assignment and gate approval in the Multi-Agent Handoff Protocol (`principles-conditional.md`). Exempt projects MAY omit this decision. When scope is `standard` or `large`, exempt projects SHOULD use the local `.agent-state/phase.md` note described in `principles-conditional.md`; for `micro` and `small`, that note is OPTIONAL.
 - **Accessibility Model** — REQUIRED when the system has any user-facing interface (web, mobile, desktop, CLI) per `standards.md` Accessibility. The decision MUST specify: (a) target compliance level per interface class (WCAG 2.2 AA for web; platform-native + WCAG where applicable for mobile/desktop; the CLI checklist for terminal apps), (b) testing approach per `standards.md` Accessibility → Testing approach (automated scans, manual audit cadence, AT target, CI integration), (c) assistive-technology support target. Projects with no user-facing interface MAY record `accessibility: N/A — no user interface` with justification.
 - **Deployment model, caching strategy, internationalization, API versioning, deployment safety strategy** (feature flags, progressive rollout)
 
@@ -96,7 +125,7 @@ Fields ordered per ADR convention: identification → status → context → pri
 **Decision:** {what was decided}
 **Alternatives considered:** {at least 2 structurally different options with their strengths}
 **Why this option wins:** {compare each alternative against simplicity, correctness, maintainability, extensibility — a one-sentence dismissal is not genuine analysis}
-**Confirmation:** {how compliance with this decision is mechanically or judgmentally verified — examples: "verified by `SC-7` conformance test", "enforced by PreToolUse hook in `harness/claude-code/settings.json`", "audited at Phase 3 gate via Post-Change Verification item N", "grep check against the Naming Table in `decisions.md`". REQUIRED when Status is `Accepted`, `Final`, or `emergency`. MAY be refined as the mechanism matures (e.g., "will be verified by `SC-7`" at `Accepted` → "verified by `SC-7`, passing as of 2026-MM-DD" at `Final`)}
+**Confirmation:** {how compliance with this decision is mechanically or judgmentally verified — examples: "verified by `specs/auth.md:SC-7` conformance test", "enforced by PreToolUse hook in `harness/claude-code/settings.json`", "audited at Phase 3 gate via Post-Change Verification item N", "grep check against the Naming Table in `decisions.md`". REQUIRED when Status is `Accepted`, `Final`, or `emergency`. MAY be refined as the mechanism matures (e.g., "will be verified by `specs/auth.md:SC-7`" at `Accepted` → "verified by `specs/auth.md:SC-7`, passing as of 2026-MM-DD" at `Final`)}
 **Unresolved concerns:** {risks or objections acknowledged but accepted — record why they are acceptable; leave blank if none}
 **Downstream impact:** {what this decision affects — decision IDs that depend on it, spec files, or subsystem names}
 ```
@@ -122,20 +151,20 @@ Decisions move through a sequence of states. Each state imposes different obliga
 | **Draft** | Being written; not ready for review. | (none beyond base) | `Proposed`, `Rejected`, `Deferred`, `not-applicable` |
 | **Proposed** | Author believes it is ready for review. | Decision + Alternatives considered + Why this option wins + Prior art (if significant) + Unresolved concerns + Downstream impact | `Accepted`, `Draft` (rework), `Rejected` |
 | **Accepted** | Reviewed and approved; implementation not yet complete. This state replaces the prior vocabulary's `settled` value. | All `Proposed` fields + Confirmation + Date accepted | `Final`, `Superseded`, `Rejected` |
-| **Final** | Implemented in code, verified by the Confirmation mechanism, and in production use. | All `Accepted` fields + Date final + Confirmation refined with evidence | `Superseded`, `Rejected` (terminal rollback only, under Rollback Protocol) |
+| **Final** | Implemented in code, verified by the Confirmation mechanism, and authoritative in current use. Later cycles MAY supersede it through the normal revision path. | All `Accepted` fields + Date final + Confirmation refined with evidence | `Superseded`, `Rejected` (terminal rollback only, under Rollback Protocol) |
 | **Superseded (by D-{n})** | Replaced by a later decision. Retained for traceability. | `Status: Superseded (by D-{n})` reference | None — terminal |
 | **Rejected** | Considered and not chosen. Retained to prevent re-deliberation and to support future alternatives analysis. | All `Proposed` fields + Why this option wins explaining the rejection | None — terminal |
 | **Deferred** | Postponed with an explicit trigger condition that will resume analysis. | Explicit trigger condition in Unresolved concerns | `Draft` (when trigger fires), `Rejected` |
 | **not-applicable** | Required slot (D-1..D-12) skipped because project scope does not require it. | Scope classification justification | None — terminal unless scope reclassifies upward |
-| **emergency** | Hotfix recorded under the Emergency Protocol in `AGENTS.md`. MUST be reconciled within 48 hours. | Same required fields as `Accepted` + emergency reconciliation gap reference | `Accepted` (ratified) or `Rejected` (reverted) |
+| **emergency** | Hotfix recorded under the Hotfix Workflow in `03-implement.md`. MUST be reconciled within 48 hours. | Same required fields as `Accepted` + emergency reconciliation gap reference | `Accepted` (ratified) or `Rejected` (reverted) |
 
-Any transition not listed above is prohibited. If the agent needs a transition that is not in the table, the agent MUST escalate via the Amendment Protocol in `AGENTS.md` rather than self-authorize.
+Any transition not listed above is prohibited. If the agent needs a transition that is not in the table, the agent MUST escalate via the Amendment Protocol in `principles-gates.md` rather than self-authorize.
 
 **State counts at each phase gate:**
 
 - **Phase 1 Design Closure Gate**: every Required Decision (D-1..D-12 for standard/large, D-1..D-10 for small) MUST be in `Accepted` or `not-applicable` state. No `Draft`, `Proposed`, or `Deferred` decisions MAY remain for Required slots.
 - **Phase 2 Spec Gate**: every spec MUST trace to decisions in `Accepted` or `Final` state. `Draft`, `Proposed`, or `Deferred` decisions MUST NOT be used as spec traceability targets.
-- **Phase 3 Project Completion**: every decision cited by implementation MUST be in `Final` state. `Superseded`, `Rejected`, and `not-applicable` decisions are retained in `decisions.md` for traceability but MUST NOT be cited as `Implements:` trailers on live code. `Deferred` decisions MUST have fired their trigger by project completion (and moved to `Final` or `Rejected`), or be explicitly acknowledged as out-of-scope deferrals in the Project Completion Criteria.
+- **Phase 3 Completion**: every decision cited by implementation MUST be in `Final` state. `Superseded`, `Rejected`, and `not-applicable` decisions are retained in `decisions.md` for traceability but MUST NOT be cited as `Implements:` trailers on live code. `Deferred` decisions MUST have fired their trigger by Phase 3 completion (and moved to `Final` or `Rejected`), or be explicitly acknowledged as out-of-scope deferrals in the Phase 3 Completion Criteria. In `steady-state` mode, this check applies at cycle completion rather than implying end-of-history finality.
 
 ## Naming Table
 
@@ -174,38 +203,28 @@ If the project is too large for one coherent design pass, the agent MUST say so 
 - Cross-cutting concerns (security model, error model, naming model) MUST be `Accepted` globally before any feature slice enters Phase 2 — these MUST NOT be sliced
 - The agent MUST record each feature slice's phase status in `phase.md`
 
-## Adversarial Gate Check
-
-Before evaluating the Design Closure Gate below, the agent MUST run an adversarial review subagent per `principles-gates.md` Adversarial Review Protocol. This review is distinct from the design review embedded in the Whole-System Composition Check above: the composition check validates the interaction of all `Accepted` or `Final` decisions; adversarial review catches completeness gaps within individual decisions — vague `Prior art`, hand-waved `Alternatives considered`, `Confirmation` fields citing non-existent tests or hooks, `[NEEDS CLARIFICATION]` markers in decision bodies, or decisions with `Downstream impact: _(to be filled)_` placeholders.
-
-**Scope:** required for standard and large scope projects; optional for micro and small (the author MAY self-review). **Input:** `decisions.md` entries for all in-scope Required Decisions (D-1..D-12 per scope), the Whole-System Composition Check section above, and the Pre-Closure Certainty Check questions below. **Output:** a list of `file:line` findings. The agent MUST address every finding before the Design Closure Gate evaluates. The adversarial review runs BEFORE the Composition Check and BEFORE the Pre-Closure Certainty Check — if the review surfaces `[NEEDS CLARIFICATION]` markers or underspecified decisions, the later checks cannot run meaningfully.
-
 ## Design Closure Gate
 
-Ordered by decision dependency — foundational constraints first, organizational decisions next, meta-validations last. ALL items MUST be YES to advance. Tags: `[M]` mechanical, `[J]` judgment, `[M+J]` both.
+Apply the shared gate procedure from `AGENTS.md` Phase Gates and `principles-gates.md` (Gate Outcome Vocabulary, Three-Tier Gate Criteria, Multi-Perspective Verification, Verification Coverage Matrix). Run the Adversarial Review Protocol per its Per-phase timing hooks table in `principles-gates.md` before scoring this checklist. This checklist records the Phase 1-specific criteria only.
 
-**HALT AND REPORT.** Evaluate each item below against the Gate Outcome Vocabulary and Three-Tier Gate Criteria in `principles-gates.md`. Report the gate outcome (`Go`, `Conditional Go`, `Hold`, `Recycle`, or `Kill`) using the Completion Status Protocol — include evidence for each `[M]` item and a rendered judgment for each `[J]` item. For `Conditional Go`, record each unmet `[should-meet]` item as a `conditional` gap entry. For `Hold` or `Recycle`, list the specific `[must-meet]` items that fail.
+**Tally:** 3 `[M]` · 0 `[M+J]` · 13 `[J]`. **Tiers:** 12 `[must-meet]` · 4 `[should-meet]` · 0 `[nice-to-have]`.
 
-**Tally:** 3 `[M]` · 2 `[M+J]` · 13 `[J]`. **Tiers:** 14 `[must-meet]` · 4 `[should-meet]` · 0 `[nice-to-have]`.
-
-- [ ] **[M]** **[must-meet]** All required decisions MUST be recorded as `Accepted` (or explicitly marked `not-applicable` with justification) in `decisions.md` — for standard/large scope all 12 are REQUIRED; for small scope D-1 through D-10 are REQUIRED and D-11, D-12 MAY be marked `not-applicable` per the scope classification in `00-audit.md`. `Final` is also acceptable (and expected when a required decision is re-entered from a later phase). Mechanical: `grep -c '^### D-' .agent-state/decisions.md` MUST be at least the scope-required count, AND `grep -A1 '^### D-' .agent-state/decisions.md | grep -E 'Status:\*\* (Draft|Proposed|Deferred)' | grep -vE '^### D-(P\d+|1[3-9]|[2-9]\d+)'` MUST return zero hits for Required Decision IDs (D-1..D-12 are Required; D-13+ and D-P{n} project-specific decisions MAY still be `Draft`/`Proposed`/`Deferred` at Phase 1 gate if they are not cross-cutting).
+- [ ] **[M]** **[must-meet]** All required decisions MUST be recorded as `Accepted` (or explicitly marked `not-applicable` with justification) in `decisions.md` — for standard/large scope all 12 are REQUIRED; for small scope D-1 through D-10 are REQUIRED and D-11, D-12 MAY be marked `not-applicable` per the scope classification in `00-audit.md`. `Final` is also acceptable (and expected when a required decision is re-entered from a later phase). Mechanical: `grep -A2 -E '^### D-([1-9]|1[0-2]):' .agent-state/decisions.md | grep -E '^\*\*Status:\*\* (Draft|Proposed|Deferred)$'` MUST return zero hits for Required Decision IDs (D-1..D-12 are Required; D-13+ project-specific decisions MAY still be `Draft`/`Proposed`/`Deferred` at Phase 1 gate if they are not cross-cutting).
 - [ ] **[J]** **[must-meet]** Product boundary MUST be explicit (what is in, what is out)
 - [ ] **[J]** **[must-meet]** All subsystem boundaries MUST be defined
 - [ ] **[J]** **[must-meet]** Authority model MUST have no gaps (every durable concept MUST have one owner)
 - [ ] **[J]** **[should-meet]** Public contracts MUST be defined (or explicitly deferred with documented reason — deferred contracts MUST be recorded as `conditional` gap entries)
 - [ ] **[J]** **[must-meet]** Data model MUST be fully specified (objects, persistence format, wire format)
 - [ ] **[J]** **[must-meet]** Security model MUST cover trust boundaries, authentication, authorization, and input validation
-- [ ] **[J]** **[must-meet]** Threat model MUST be complete OR explicit N/A recorded. For projects meeting the `playbooks/security-threat-model.md` applicability conditions (secrets, user data, or cross-trust-boundary communication), the full STRIDE matrix MUST be populated per trust boundary with every STRIDE letter mitigated or carrying an explicit `accepted-risk` gap entry. For projects not meeting applicability, D-5 MUST record `threat model: N/A — {one-sentence justification}` referencing which of the four applicability conditions is absent. Mechanical: if `specs/threat-model.md` exists, `grep -c '^### Boundary:' specs/threat-model.md` MUST match the D-5 declared boundary count; AND `grep -cE '^- \*\*(Spoofing|Tampering|Repudiation|Information disclosure|Denial of service|Elevation of privilege):' specs/threat-model.md` MUST equal 6 × boundary count.
+- [ ] **[J]** **[must-meet]** Threat model MUST be complete OR explicit N/A recorded. For projects meeting the `playbooks/security-threat-model.md` applicability conditions (secrets, user data, cross-trust-boundary communication, or input from an external source that could be adversarial), the full STRIDE matrix MUST be populated per trust boundary with every STRIDE letter mitigated, structurally marked `N/A`, or carrying a cited `residual risk tracked in G-{n}` reference. The matrix artifact MUST exist at the path D-5 names (`specs/threat-model.md` is the default; D-5 MAY name another path with justification). For projects not meeting applicability, D-5 MUST record `threat model: N/A — {one-sentence justification}` referencing which of the four applicability conditions is absent. Mechanical: when applicability is met, `grep -c '^### Boundary:' {threat-model path}` MUST match the D-5 declared boundary count; AND `grep -cE '^- \*\*(Spoofing|Tampering|Repudiation|Information disclosure|Denial of service|Elevation of privilege):' {threat-model path}` MUST equal 6 × boundary count. Missing artifact when applicability is met fails the gate.
 - [ ] **[M]** **[must-meet]** Naming table MUST be populated with no unresolved collisions. Mechanical: no duplicate Canonical Term rows in the Naming Table within `decisions.md`.
 - [ ] **[J]** **[must-meet]** Critical failure and recovery semantics MUST be decided
 - [ ] **[J]** **[should-meet]** Configuration and observability models MUST be decided
 - [ ] **[J]** **[must-meet]** Test strategy MUST be decided
 - [ ] **[J]** **[should-meet]** Repository structure MUST be decided
 - [ ] **[J]** **[should-meet]** Documentation structure MUST be decided
-- [ ] **[M+J]** **[must-meet]** All CRITICAL gaps in `gaps.md` MUST be resolved. Mechanical: `grep -A1 '^### G-' .agent-state/gaps.md | grep -B1 'Severity:\*\* critical' | grep 'Status:\*\* open'` MUST return zero hits. Judgment: severity classification itself may have been wrong at entry time — spot-check before advancing.
 - [ ] **[J]** **[must-meet]** Whole-system composition check MUST pass (delegates to the Composition Check section above)
 - [ ] **[M]** **[must-meet]** No stale placeholders in authored artifacts. Mechanical: `grep -rnE '\b(TBD|TODO|FIXME|XXX)\b|\((forthcoming|pending)\)' .agent-state/decisions.md` MUST return zero hits.
-- [ ] **[M+J]** **[must-meet]** Verification Coverage Matrix complete: all 5 perspectives exercised with clean results. Mechanical: the session log contains a filled matrix with no `no` or `findings` entries. Judgment: the evidence cited for each perspective is genuine (not a shallow pass). See `principles-gates.md` Verification Coverage Matrix.
 
 If ANY `[must-meet]` item is NO, the gate outcome is `Hold` or `Recycle`. If only `[should-meet]` items are NO, the gate outcome is `Conditional Go` per the Gate Outcome Vocabulary in `principles-gates.md`.
 
@@ -223,7 +242,7 @@ After every Design Closure Gate item is checked YES, the agent MUST answer these
 - **[J]** **[must-meet]** Are there any perspectives from Multi-Perspective Verification (see `principles-gates.md` Multi-Perspective Verification for the canonical perspective list) that have NOT been verified or did NOT produce clean results?
 - **[J]** **[must-meet]** **Ideal Final Result (TRIZ):** For each decision, imagine the no-drawback version — the version that delivers the decision's benefit with zero cost, zero complexity, zero operational overhead. If the no-drawback version is different from what was chosen, why was it not chosen? If the answer is **"cost or effort only"**, the agent MUST revisit the decision — cost and effort alone do not justify the gap between ideal and chosen when the project is still in Phase 1. If the answer is an inherent constraint (physical, legal, contractual, external dependency), the agent MUST record the constraint in the decision's Context or Alternatives section so future revisions do not re-traverse the same ground.
 
-If ANY answer is yes, the gate is NOT passed. The agent MUST return to the relevant decision, close the gap, re-run the composition check, and re-evaluate. Thoroughness here prevents costly rework during implementation.
+If ANY answer is yes, the gate is NOT passed. The agent MUST return to the relevant decision, close the gap, re-run the composition check, and re-evaluate. The answers also MUST NOT conflict with the current fresh-context design/adversarial review artifacts or the recorded Verification Coverage Matrix; unsupported or contradicted "no" answers fail the gate. At standard/large scope, the current fresh-context gate review artifact is required evidence for these answers — the author alone is not the sole judge, and the gate review may reject any self-assessment it does not find supported. Thoroughness here prevents costly rework during implementation.
 
 Answering "no" REQUIRES concrete evidence — the agent MUST cite the specific decisions, sections, or gap entries that address each concern. An unsupported "no" MUST be treated as "yes" (gate fails).
 

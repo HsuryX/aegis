@@ -39,20 +39,17 @@ Entries ordered alphabetically by Canonical Term. See `01-design.md` for populat
 
 | Concept | Canonical Term | Owner | Forbidden Aliases |
 |---------|---------------|-------|-------------------|
-| | | | |
+
+Owner column rule: `Owner` names the current canonical owner of the concept, not merely a file that mentions the term.
 
 ## Active Decisions
 
-(Decisions in `Draft`, `Proposed`, or `Deferred` state — still being decided. Actionable items first.)
+(none)
 
 ## Accepted and Final Decisions
 
-(Decisions that have passed review. `Accepted` = reviewed and approved, implementation not yet complete. `Final` = implemented, verified by the Confirmation mechanism, and in production use.)
+(none)
 
 ## Terminal Decisions
 
-(`Superseded`, `Rejected`, and `not-applicable` entries retained for traceability. Superseded entries cite their replacement via `Status: Superseded (by D-{new})`; replacement entries live in Accepted/Final above and cite the superseded ID via `Supersedes:`. Rejected entries retain their Alternatives considered analysis to prevent re-deliberation. `not-applicable` entries document why a Required slot was skipped under the scope classification.)
-
----
-
-Entry format: see `01-design.md` Decision Entry Format and Decision Lifecycle. Fields: Status, Date opened, Date accepted, Date final, Surface, Supersedes (if applicable), Context, Prior art, Decision, Alternatives considered, Why this option wins, Confirmation, Unresolved concerns, Downstream impact.
+(none)

@@ -28,12 +28,8 @@ Identifiers follow [`../playbooks/identifiers.md`](../playbooks/identifiers.md):
 
 ## Lessons This Project
 
-(None yet.)
+(none)
 
 ## Candidate Patterns (recurring across projects)
 
-(None yet — promotion from "Lessons This Project" to this section requires ≥ 2 observations across distinct projects per `principles.md` Required Behaviors lessons-aggregation rule.)
-
----
-
-Entry format: see SCHEMA above. Fields: First observed, Last observed, Occurrences in this project, Category, Pattern, Context, Amendment proposal, Cross-session pattern, Evidence, Counter rule already in framework, Candidate for amendment, Cross-project occurrences.
+(none)

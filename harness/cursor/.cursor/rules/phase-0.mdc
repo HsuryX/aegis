@@ -1,6 +1,5 @@
 ---
 description: Phase 0 Audit rules for aegis — surface cataloging, scope classification, verdict discipline
-globs: "**/*"
 alwaysApply: false
 ---
 
@@ -10,25 +9,24 @@ Canonical source: `playbooks/00-audit.md`. Activate this rule only when `.agent-
 
 ## Objective
 
-The agent MUST catalogue every major surface. For each, the agent MUST determine what exists, what is strong, what is broken, and the preliminary verdict. The agent MUST produce a strategy decision.
+The agent MUST catalogue every major surface. For each, the agent MUST determine what exists, what is strong, what is broken, and the preliminary verdict. The agent MUST produce a strategy decision, including lifecycle mode.
 
 ## Required steps
 
-1. Classify project scope (micro / small / standard / large) — recorded in `.agent-state/audit.md` Strategy section
+1. Classify project scope (micro / small / standard / large) — recorded in `.agent-state/audit.md` Strategy section and in `.agent-state/phase.md`
 2. Audit each surface required by the scope:
    - **Micro**: Product + Security
    - **Small**: Product + Architecture + Security + Quality
    - **Standard / Large**: all seven (Product, Architecture, Runtime, Operations, Security, Quality, Organization)
 3. For each surface, record the Per-Surface Entry Format entry with explicit verdict per item (`keep`, `keep-with-conditions`, `redesign`, or `delete`). See `playbooks/00-audit.md` Per-Surface Entry Format → Worked Example for an illustrative entry. When the Security surface qualifies (secrets / user data / cross-trust-boundary), record the preliminary threat model per `playbooks/security-threat-model.md` Phase 0 section.
-4. Strategy decision (in-place evolution, clean-room rewrite, hybrid, or new-build)
-5. Identify top 3 highest-risk structural problems in `.agent-state/gaps.md` (critical severity, type `decision` or `analysis`)
+4. Strategy decision plus lifecycle mode (`finite-delivery` or `steady-state`) recorded in `.agent-state/audit.md`, with lifecycle mode also recorded in `.agent-state/phase.md`
+5. Identify top 3 highest-risk structural problems in `.agent-state/gaps.md`
 
 ## Phase gate (MUST pass to advance)
 
 - All surfaces required by scope classification MUST have entries
-- Strategy MUST be decided and recorded
-- Top 3 structural problems MUST be identified as critical gaps
-- No CRITICAL gaps MAY remain unresolved
+- Scope classification, strategy, and lifecycle mode MUST be decided and recorded in `.agent-state/audit.md`, and scope classification plus lifecycle mode MUST be recorded in `.agent-state/phase.md`
+- Top 3 structural problems MUST be identified and recorded in `gaps.md`
 
 See `playbooks/00-audit.md` Phase Gate for the full mechanical + judgment item list.
 
@@ -42,4 +40,4 @@ For green-field projects (no existing code), the Verdict field is not applicable
 
 ## Scope reclassification
 
-The scope classification MAY be revised during the audit if the project turns out to be more or less complex than initially assessed. Changing classification does not require phase regression. If a project outgrows its scope during a later phase, the agent MUST reclassify upward and apply the Phase Regression Procedure from `AGENTS.md` to the earliest phase whose gate criteria are no longer met.
+The scope classification MAY be revised during the audit if the project turns out to be more or less complex than initially assessed. Changing classification does not require phase regression. If a project outgrows its scope during a later phase, the agent MUST reclassify upward and apply the Phase Regression Procedure from `AGENTS.md` to the earliest phase whose gate criteria have newly become applicable under the new scope.

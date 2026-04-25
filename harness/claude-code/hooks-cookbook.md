@@ -6,7 +6,7 @@ Claude-Code-specific implementation of aegis's automation rules. For the agent-n
 
 ## Hook basics
 
-Hooks MUST be configured in `harness/claude-code/settings.json`. Hooks automate what rules describe — they are the Claude Code realization of the principles in `playbooks/automation.md`.
+Hooks MUST be configured in the real loaded Claude settings path, using `harness/claude-code/settings.json` as the shipped source. Hooks automate what rules describe — they are the Claude Code realization of the principles in `playbooks/automation.md`.
 
 Claude Code hook commands receive the tool invocation as JSON on stdin. Hook scripts MUST extract fields by parsing stdin — there is no `$FILE_PATH` shell variable. The only Claude-provided environment variable useful here is `$CLAUDE_PROJECT_DIR` (the project root). A hook that fails to parse stdin correctly will silently no-op, so the author MUST verify each hook by echoing a sample payload through it before committing.
 
@@ -114,20 +114,20 @@ Fail-open is a failure mode — see `playbooks/automation.md` principle 5.
 - Remind to update state files if phase is active
 - Optional: if formatter and linter are not already configured as PostToolUse hooks, the agent MAY batch them at Stop on files edited during the session (the author MUST choose one location — MUST NOT run both per-edit and at session end)
 - For spec-only projects (Phase 2 terminal), omit the Stop build hook or set `<build-command>` to `/bin/true`
-- **Evidence-cell verifiability check**: if the session is closing a phase gate and the session log contains a Verification Coverage Matrix, verify every `Evidence` cell matches the verifiable-reference regex `(\.agent-state/phase\.md#|sha256:[0-9a-f]{64}|[a-z0-9_/\-.]+\.md:\d+|<subagent:[a-z-]+>)`. Empty or prose-only Evidence cells MUST produce exit 2 and block session end — see `principles.md` Verification Coverage Matrix → Evidence verifiability.
+- **Evidence-cell verifiability check**: if the session is closing a phase gate and the session log contains a Verification Coverage Matrix, verify every `Evidence` cell uses one of the canonical forms: `file.md:N`, `file.md#anchor`, `sha256:{64 hex}`, `#session-YYYY-MM-DD-slug`, `<subagent:NAME>`, or `(pending)` only when the row's `Result` is `pending`. Empty or prose-only Evidence cells MUST produce exit 2 and block session end — see `principles-gates.md` Verification Coverage Matrix → Evidence verifiability.
 
 **Commit-msg (git hook)** — commit message format enforcement (`03-implement.md` Traceability → Commit message format enforcement):
 
 - Validate header regex: `^(feat|fix|refactor|docs|test|chore|perf|ci)(\([a-z0-9-]+\))?: .+$`
 - Require `Implements: D-\d+` trailer unless commit type is `chore` OR project scope is `micro` (scope readable from `.agent-state/phase.md`)
-- Optionally require `Covers: SC-\d+` or `Covers: FR-\d+` trailer when the commit adds test files (diff-detected)
+- Optionally lint a path-qualified `Covers: specs/<spec>.md:SC-\d+` or `Covers: specs/<spec>.md:FR-\d+` trailer when present as change-summary metadata, but MUST NOT treat commit-msg validation as sufficient per-test traceability; per-test enforcement still belongs in the test files via slugged suffixes or in-file `Covers:` comments
 - Installation: under `.git/hooks/commit-msg` or managed by husky/lefthook; for Claude Code users, a Stop hook MAY replicate this on the most recent commit when git hooks are not installed
 
-**SessionStart (kitchen-sink-session detector)** — advisory warning (`AGENTS.md` Session Start Protocol step 9):
+**SessionStart (kitchen-sink-session detector)** — advisory warning (`AGENTS.md` Session Start Protocol step 8):
 
 - Parse the user's opening prompt via the prompt hook JSON stdin
 - Regex for distinct-concern markers: `/\b(and then|also|plus|additionally|furthermore)\b/gi` and count
-- If ≥ 3 distinct concerns OR the prompt references ≥ 2 phase transitions, emit stderr advisory: "Scope guard: prompt contains multiple concerns. Consider session sequencing per AGENTS.md step 9." This is non-blocking (exit 0) — the agent then decides whether to propose sequencing to the user
+- If ≥ 3 distinct concerns OR the prompt references ≥ 2 phase transitions, emit stderr advisory: "Scope guard: prompt contains multiple concerns. Consider session sequencing per AGENTS.md step 8." This is non-blocking (exit 0) — the agent then decides whether to propose sequencing to the user
 
 **PreToolUse (Write|Edit) — Naming-table alias enforcement** (`03-implement.md` Post-Change Verification naming check + `standards.md` Naming):
 

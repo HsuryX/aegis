@@ -1,6 +1,5 @@
 ---
 description: Phase 3 Implement rules for aegis — TDD workflow, traceability, verification sequence
-globs: "**/*"
 alwaysApply: false
 ---
 
@@ -20,7 +19,7 @@ Pre-Implementation Check → TDD (test → implement → refactor) → Post-Chan
 
 1. **No architectural discovery** — if architecture needs to change, STOP coding, update `decisions.md`, regress to Phase 1 per the Phase Regression Procedure in `AGENTS.md`
 2. **No copy-paste from reference material** — use `_legacy/` and external sources for behavioral clues only; write new code fresh
-3. **No scope change** — implement exactly what is decided; no adding capability beyond specifications AND no silently dropping requirements. Forbidden phrases: "v1", "simplified version", "static for now", "placeholder", "defer to follow-up", "good enough for now"
+3. **No scope change** — implement exactly what is decided; no adding capability beyond specifications AND no silently dropping requirements. Forbidden phrases (canonical list in `validate.py` `_DEFERRAL_PHRASES`): "simplified version", "static for now", "defer to follow-up", "good enough for now", "stub for the moment", "coming in v2"
 4. **No compatibility shims** unless explicitly recorded as a design decision with justification
 5. **Exact naming** — use canonical terms from the Naming Table; synonyms MUST NOT be introduced
 6. **Correct placement** — files MUST be placed where D-11 (Repository structure) specifies
@@ -29,20 +28,21 @@ Pre-Implementation Check → TDD (test → implement → refactor) → Post-Chan
 
 ## Traceability
 
-Every commit MUST reference the decision it implements using labels from `playbooks/identifiers.md`. Every test MUST cite the `SC-{n}` or `FR-{n}` it validates:
+Every commit MUST reference the decision it implements using labels from `playbooks/identifiers.md`. Every test MUST cite the path-qualified `specs/<spec>.md:SC-{n}` or `specs/<spec>.md:FR-{n}` it validates:
 
 ```
 type(scope): description
 
 Implements: D-{n}
-Implements: D-{n}, FR-{n}
-Covers: SC-{n}
+Implements: D-{n}, specs/<spec>.md:FR-{n}
+Implements: specs/<spec>.md:NFR-{n}
+Covers: specs/<spec>.md:SC-{n}
 Closes: G-{n}
 ```
 
-`Covers:` MAY appear as a commit trailer, a test-name suffix (`covers_SC_3`), or an in-file comment (`// Covers: SC-3` as the first line of the test body). The Phase 3 gate test-traceability check accepts all three forms. Commit message header MUST match `^(feat|fix|refactor|docs|test|chore|perf|ci)(\([a-z0-9-]+\))?: .+$`; `Implements:` trailer is required for non-`chore` commits in non-micro projects. Multiple trailer types MAY coexist in one commit message.
+`Covers:` MAY appear as optional commit metadata (`Covers: specs/auth.md:SC-3`), but per-test traceability is satisfied only by a test-name suffix (`covers_specs_auth_md_SC_3`) or an in-file comment (`// Covers: specs/auth.md:SC-3`) in the test file. In suffix form, the spec path slug lowercases the spec path, replaces every non-alphanumeric character with `_`, and strips leading/trailing `_` (for example `specs/auth.md` → `specs_auth_md`). The Phase 3 gate test-traceability check accepts only those two per-test forms. Commit message header MUST match `^(feat|fix|refactor|docs|test|chore|perf|ci)(\([a-z0-9-]+\))?: .+$`; `Implements:` trailer is required for non-`chore` commits in non-micro projects. Multiple trailer types MAY coexist in one commit message.
 
-**Legacy-test grandfathering at adoption time.** When aegis is adopted on a project with pre-existing tests, the traceability requirement applies ONLY to tests added or edited after adoption. Pre-adoption tests MAY be grandfathered under a single project-level `gaps.md` entry (type: `grandfathered`). Any test modified after adoption MUST carry `Covers:` via one of the three forms above — grandfathering is NOT retroactive. See `playbooks/gaps.md` Gap Type Taxonomy and `playbooks/03-implement.md` Test Traceability.
+**Legacy-test grandfathering at adoption time.** When aegis is adopted on a project with pre-existing tests, the traceability requirement applies ONLY to tests added or edited after adoption. Pre-adoption tests MAY be grandfathered under a single project-level `gaps.md` entry (type: `grandfathered`). Any test modified after adoption MUST carry the required suffix or in-file `Covers:` comment via one of the two per-test forms above — grandfathering is NOT retroactive. See `playbooks/gaps.md` Gap Type Taxonomy and `playbooks/03-implement.md` Test Traceability.
 
 ## Verification Sequence (ordered — each step MUST pass before the next is meaningful)
 
@@ -61,4 +61,4 @@ If a task fails after 3 attempts, the agent MUST stop, record what was tried + w
 
 ## Project completion criteria
 
-See `playbooks/03-implement.md` Project Completion Criteria — every spec has an implementation, every verification has recorded evidence, every gap is resolved, every decision is settled, cold reader navigability, product validation against Phase 0 `SC-{n}` / `NG-{n}` labels, Multi-Perspective Verification clean.
+See `playbooks/03-implement.md` Project Completion Criteria — every spec has an implementation, every verification has recorded evidence, no open critical gaps remain, no decisions stay in `Draft` or `Proposed`, cold reader navigability, product validation against Phase 0 `PSC-{n}` / `NG-{n}` labels, and Multi-Perspective Verification is clean.

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
-  "_comment": "Edited by the human repository maintainer only. The agent is denied via the patterns below to prevent self-permission-grant. To change permissions, the maintainer edits this file directly; the agent MUST request the change through the Amendment Protocol in AGENTS.md.",
+  "_comment": "Edited by the human repository maintainer only. The agent is denied via the patterns below to prevent self-permission-grant. To change permissions, the maintainer edits this file directly; the agent MUST request the change through the Amendment Protocol in playbooks/principles-gates.md.",
   "includeGitInstructions": false,
   "permissions": {
     "deny": [

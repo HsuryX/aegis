@@ -19,9 +19,10 @@ quick_capture_format: |
   **Date captured:** YYYY-MM-DD
 quick_capture_rule: Captured entries MUST be triaged to full entries before the next phase gate. See playbooks/gaps.md Quick Capture.
   **Description:** {what is missing, unclear, or blocked}
-  **Expiry condition:** {REQUIRED for Type: deviation}
+  **Expiry condition:** {REQUIRED for Type: deviation or grandfathered}
   **Trigger condition:** {REQUIRED for Type: conditional or scope-reduction}
-  **Linked verdict:** {REQUIRED for Type: conditional — points to the audit surface whose keep-with-conditions verdict this gap tracks}
+  **Linked verdict:** {REQUIRED only for Type: conditional entries opened from a keep-with-conditions verdict — points to the audit surface whose carry-forward this gap tracks}
+  **Initial artifact set:** {REQUIRED for Type: grandfathered}
   **Resolution path:** {what unblocks this gap}
   **Resolution:** {populated when Status: resolved}
   **Date opened:** YYYY-MM-DD
@@ -37,44 +38,12 @@ Identifiers follow [`../playbooks/identifiers.md`](../playbooks/identifiers.md):
 
 ## Critical Gaps (block phase advancement)
 
-(None yet.)
+(none)
 
 ## Non-Critical Gaps (tracked, not blocking)
 
-(None yet.)
+(none)
 
 ## Resolved Gaps (kept for recent history; archive to `gaps-archive.md` once stale)
 
-(None yet.)
-
----
-
-### Severity Criteria
-
-- **Critical**: blocks phase advancement — missing information that prevents a correct result in the current phase.
-- **Non-critical**: tracked but does not block advancement — the current phase can produce a correct (if incomplete) result.
-
-When uncertain, classify as critical — false positives cost less than false negatives. For full definitions, type taxonomy, lifecycle, and resolution rules, see [`../playbooks/gaps.md`](../playbooks/gaps.md).
-
-### Entry Template
-
-```markdown
-### G-{number}: {title}
-
-**Status:** open | resolved
-**Severity:** critical | non-critical
-**Type:** evidence | analysis | decision | framework | deviation | conditional | scope-reduction | failure-pattern | grandfathered
-**Blocks:** phase advancement | D-{n} | nothing
-
-**Description:** {what is missing or unclear}
-**Expiry condition:** {REQUIRED for types `deviation`, `conditional`, `scope-reduction`, `grandfathered` — when this entry expires or its trigger fires, e.g., "until Phase 2 completes", "until D-{n} is revised", "before Phase 3 implementation of spec/{name}.md", "when user count exceeds 10k", "until all originally-grandfathered artifacts have been edited/superseded/deleted"; leave blank for `evidence`, `analysis`, `decision`, `framework`, `failure-pattern` types}
-**Trigger condition:** {REQUIRED for type `conditional` — specific event that MUST cause the condition to be met; REQUIRED for type `scope-reduction` — specific event that MUST cause the deferred requirement to be restored; leave blank for other types}
-**Linked verdict:** {REQUIRED for type `conditional` — the `keep-with-conditions` audit surface entry this condition belongs to, as `{Surface Name}` in `audit.md`; leave blank for other types}
-**Initial artifact set:** {REQUIRED for type `grandfathered` — list of file paths or `git log` anchor identifying the legacy artifacts covered, required for expiry verification}
-**Severity history:** {append-only — REQUIRED if Severity has ever changed since opening. Format: `{YYYY-MM-DD}: {old} → {new} — {justification}`; downgrades MUST cite specific evidence or named user approval. See `playbooks/gaps.md` Severity history}
-**Resolution path:** {specific action or information needed}
-**Resolution:** {how this was actually resolved — reference D-{n} or finding; filled when resolved}
-
-**Date opened:** YYYY-MM-DD
-**Date resolved:** YYYY-MM-DD
-```
+(none)

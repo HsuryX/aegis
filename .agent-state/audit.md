@@ -3,6 +3,11 @@ file_type: state
 sections:
   - "Strategy"
   - "Surface Audits"
+strategy_fields:
+  - "Approach"
+  - "Lifecycle mode"
+  - "Rationale"
+  - "Top risks"
 entry_format: |
   ### {SurfaceName}
   **Exists:** {description of current state}
@@ -21,13 +26,14 @@ Phase 0 output. Every surface listed in `playbooks/00-audit.md` MUST have an ent
 
 ## Strategy
 
-(Populated after all surface audits complete. Record the chosen strategy — **in-place evolution**, **clean-room rewrite**, **hybrid evolution**, or **new-build** (green-field) — and the rationale per `playbooks/00-audit.md` Strategy Decision.)
-
 **Approach:**
+
+**Lifecycle mode:** steady-state
 
 **Rationale:**
 
 **Top risks:**
+- (none yet)
 
 ## Surface Audits
 

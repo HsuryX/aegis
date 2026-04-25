@@ -21,7 +21,7 @@ The agent MUST record actual command output as evidence in the session log in `.
 ## When to invoke
 
 - After every meaningful implementation change (the Post-Change Verification gate in `playbooks/03-implement.md`)
-- Before advancing a phase gate (Phase 1 → 2, Phase 2 → 3, Phase 3 → project completion)
+- Before advancing a phase gate (Phase 1 → 2, Phase 2 → 3, Phase 3 → terminal completion for the active lifecycle mode)
 - After post-implementation cleanup (to confirm cleanup did not introduce regressions)
 - Before marking any session as complete
 
@@ -41,11 +41,11 @@ Verification run — 2026-04-15 14:30 UTC
 
 Free-form claims like "tests pass" without the command output that proves it are explicitly forbidden — see `playbooks/principles.md` Completion Status Protocol.
 
-**Verification Coverage Matrix (at phase gates)**. When closing a phase gate, the session log MUST contain the 5-perspective matrix (Structural / Semantic / Adversarial / End-to-end / Cold read) per `playbooks/principles.md` Verification Coverage Matrix. Every `Evidence` cell MUST carry a verifiable reference — a file path + line number (e.g., `specs/auth.md:42`), a SHA-256 hash of captured command output, a session-log anchor, or a subagent-output reference (`<subagent:security-reviewer>`). Prose-only cells fail the gate. Empty cells also fail — incomplete matrices hold the gate, they do not advance it.
+**Verification Coverage Matrix (at phase gates)**. When closing a phase gate, the session log MUST contain the 5-perspective matrix (Structural / Semantic / Adversarial / End-to-end / Cold read) per `playbooks/principles-gates.md` Verification Coverage Matrix. Every `Evidence` cell MUST carry one of the canonical verifiable forms from `playbooks/principles-gates.md`: `file.md:N`, `file.md#anchor`, `sha256:{64 hex}`, `#session-YYYY-MM-DD-slug`, `<subagent:NAME>`, or literal `(pending)` only when the row's `Result` is also `pending`. Prose-only or unresolvable cells fail the gate. Empty cells also fail — incomplete matrices hold the gate, they do not advance it.
 
-**Test-to-spec traceability.** Every test MUST cite the `SC-{n}` or `FR-{n}` it validates, in one of three forms: commit trailer `Covers: SC-3, FR-7`, test-name suffix `covers_SC_3`, or in-file comment `// Covers: SC-3` as the first line of the test body. At Phase 3 gate, `grep -rnE '(Covers:|covers_)(SC|FR)-\d+' tests/ src/` MUST return ≥ the count of `SC-{n}` entries across specs.
+**Test-to-spec traceability.** Every test MUST cite the path-qualified `specs/<spec>.md:SC-{n}` or `specs/<spec>.md:FR-{n}` it validates in one of two accepted per-test forms: test-name suffix `covers_specs_auth_md_SC_3` or in-file comment `// Covers: specs/auth.md:SC-3` in the test file. In suffix form, the spec path slug lowercases the spec path, replaces every non-alphanumeric character with `_`, and strips leading/trailing `_` (for example `specs/auth.md` → `specs_auth_md`). Optional commit-level `Covers:` trailers remain allowed as change-summary metadata, but they do NOT satisfy per-test traceability. At Phase 3 gate, `grep -rnE '^\s*(//|#)\s*Covers:\s*specs/[^ ,:]+\.md:(SC|FR)-[0-9]+|covers_[A-Za-z0-9_]+_(SC|FR)_[0-9]+' tests/ src/` MUST return ≥ the count of declared `SC-{n}` entries across specs, and `python3 validate.py` check 13 MUST confirm set coverage on the fully qualified `specs/<spec>.md:SC-{n}` identifiers.
 
-**Legacy-test grandfathering at adoption time**. For projects adopting aegis on pre-existing codebases, legacy tests MAY be grandfathered under a single `gaps.md` entry (type: `grandfathered`, severity: `info`). The grandfathered gap MUST list the initial test-file set (or a `git log` anchor) so the expiry is verifiable. Tests edited or added after adoption MUST carry the `Covers: SC-{n}` / `Covers: FR-{n}` traceability per the three accepted forms above — grandfathering is NOT retroactive. See `playbooks/gaps.md` Gap Type Taxonomy (grandfathered row) and `playbooks/03-implement.md` Test Traceability for the canonical rule.
+**Legacy-test grandfathering at adoption time**. For projects adopting aegis on pre-existing codebases, legacy tests MAY be grandfathered under a single `gaps.md` entry (type: `grandfathered`). The grandfathered gap MUST list the initial test-file set (or a `git log` anchor) so the expiry is verifiable. Tests edited or added after adoption MUST carry the required path-qualified in-file `Covers:` comment or equivalent suffix form per the two accepted per-test forms above — grandfathering is NOT retroactive. See `playbooks/gaps.md` Gap Type Taxonomy (grandfathered row) and `playbooks/03-implement.md` Test Traceability for the canonical rule.
 
 ## Required evidence per claim
 

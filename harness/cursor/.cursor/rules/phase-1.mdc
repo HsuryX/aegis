@@ -1,6 +1,5 @@
 ---
 description: Phase 1 Design rules for aegis — architectural decisions, quality seeking, cascade rule
-globs: "**/*"
 alwaysApply: false
 ---
 
@@ -16,7 +15,7 @@ The agent MUST close all major architectural decisions. The target system shape 
 
 1. **Architecture** — subsystems, boundaries, dependency direction
 2. **Authority model** — what owns truth for each domain concept (see `playbooks/glossary.md` authority model). Micro/small scope MAY use a single-sentence owner-per-concept form; standard/large REQUIRE the full authority map.
-3. **Public contracts** — exact interfaces, not vague descriptions. Cross-trust-boundary interfaces REQUIRE a machine-readable contract (OpenAPI 3.1 / protobuf / AsyncAPI 2.6 / JSON Schema 2020-12 — see `playbooks/standards.md` Contract Formats); the form is resolved by D-13+ Contract Format decision.
+3. **Public contracts** — exact interfaces, not vague descriptions. Cross-trust-boundary interfaces REQUIRE a machine-readable contract form from `playbooks/standards.md` Contract Formats; the form is resolved by D-13+ Contract Format decision.
 4. **Data model** — canonical object shapes, persistence format, wire format
 5. **Security model** — trust boundaries, secret management, auth, input validation. When the project handles secrets, user data, or cross-trust-boundary communication, D-5 MUST link to a full STRIDE matrix at `specs/threat-model.md` per `playbooks/security-threat-model.md`.
 6. **Error and recovery model** — failure semantics, degraded states, recovery order
@@ -27,7 +26,7 @@ The agent MUST close all major architectural decisions. The target system shape 
 11. **Repository structure** — directory layout reflecting architecture (depends on 1-10)
 12. **Documentation structure** — what documents exist, what each owns (depends on 1-11)
 
-D-13+ project-specific candidates MAY include: **Contract Format** (OpenAPI/protobuf/AsyncAPI/JSON Schema — REQUIRED for cross-trust-boundary interfaces), **Subsystem Ownership** (REQUIRED for standard/large with ≥ 3 team members), **Accessibility Model** (REQUIRED when UI is present — WCAG 2.2 AA, testing approach, AT target).
+D-13+ project-specific candidates MAY include: **Contract Format** (REQUIRED for cross-trust-boundary interfaces; see `playbooks/standards.md` Contract Formats), **Subsystem Ownership** (REQUIRED only when scope is `standard|large` AND the project has ≥ 2 subsystems AND ≥ 3 distinct agents or team members across its lifetime), **Accessibility Model** (REQUIRED when UI is present — WCAG 2.2 AA, testing approach, AT target).
 
 The agent MUST settle decisions in dependency order. Downstream decisions MUST NOT be opened while upstream dependencies remain open.
 
@@ -40,12 +39,12 @@ The agent MUST settle decisions in dependency order. Downstream decisions MUST N
 
 ## Cascade rule
 
-When revising a settled decision, the agent MUST re-evaluate every decision listed in the revised decision's Downstream impact field. Transitively re-evaluate downstream decisions until unchanged. Then re-run the Whole-System Composition Check. See the Cascade Rule section in `playbooks/01-design.md`.
+When revising an `Accepted` or `Final` decision, the agent MUST re-evaluate every decision listed in the revised decision's Downstream impact field. Transitively re-evaluate downstream decisions until unchanged. Then re-run the Whole-System Composition Check. See the Cascade Rule section in `playbooks/01-design.md`.
 
 ## Pre-closure certainty check
 
-After every Design Closure Gate item is checked YES, the agent MUST answer six honest questions (see `playbooks/01-design.md` Pre-Closure Certainty Check). Any "yes" answer blocks advancement. An unsupported "no" MUST be treated as "yes".
+After every Design Closure Gate item is checked YES, the agent MUST answer seven honest questions (see `playbooks/01-design.md` Pre-Closure Certainty Check). Any "yes" answer blocks advancement. An unsupported "no" MUST be treated as "yes".
 
 ## Phase gate
 
-All 12 (or scope-adjusted) decisions settled, Composition Check passes, Pre-Closure Certainty Check passes with concrete evidence for every answer, all CRITICAL gaps resolved. Threat model complete or explicit N/A recorded per `playbooks/security-threat-model.md`. Verification Coverage Matrix complete per `playbooks/principles.md`. See `playbooks/01-design.md` Design Closure Gate for the full mechanical + judgment item list.
+Required decisions are in the canonical gate-allowed states, Composition Check passes, Pre-Closure Certainty Check passes with concrete evidence for every answer, all CRITICAL gaps resolved. Threat model complete or explicit N/A recorded per `playbooks/security-threat-model.md`. Verification Coverage Matrix complete per `playbooks/principles-gates.md`. See `playbooks/01-design.md` Design Closure Gate for the full mechanical + judgment item list.

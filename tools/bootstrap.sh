@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
 # aegis bootstrap — initialize a new project using the aegis governance framework.
 # Copies framework files into the target directory, resets .agent-state/ to
-# template-only, prompts for scope classification, writes initial phase.md,
+# template-only, prompts for scope classification + lifecycle mode, writes initial phase.md,
 # and smoke-tests with validate.py.
 #
 # Usage:
 #   tools/bootstrap.sh <target-dir> [--scope micro|small|standard|large]
+#                                   [--lifecycle-mode finite-delivery|steady-state]
 #                                   [--type application|library|cli|spec-only|other]
 #                                   [--terminal-phase 0-audit|1-design|2-spec|3-implement]
+#                                   [--name <project-name>]
 #
 # When a flag is omitted the script prompts interactively.
 
@@ -34,6 +36,7 @@ TARGET="$1"
 shift
 
 SCOPE=""
+LIFECYCLE_MODE=""
 PROJECT_TYPE=""
 TERMINAL_PHASE=""
 PROJECT_NAME=""
@@ -41,6 +44,7 @@ PROJECT_NAME=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --scope) SCOPE="$2"; shift 2 ;;
+    --lifecycle-mode) LIFECYCLE_MODE="$2"; shift 2 ;;
     --type) PROJECT_TYPE="$2"; shift 2 ;;
     --terminal-phase) TERMINAL_PHASE="$2"; shift 2 ;;
     --name) PROJECT_NAME="$2"; shift 2 ;;
@@ -95,6 +99,15 @@ if [[ -z "$PROJECT_TYPE" ]]; then
   read -r -p "Project type [application|library|cli|spec-only|other]: " PROJECT_TYPE
 fi
 
+if [[ -z "$LIFECYCLE_MODE" ]]; then
+  read -r -p "Lifecycle mode [finite-delivery|steady-state]: " LIFECYCLE_MODE
+fi
+
+case "$LIFECYCLE_MODE" in
+  finite-delivery|steady-state) : ;;
+  *) echo "error: lifecycle mode must be one of finite-delivery|steady-state" >&2; exit 1 ;;
+esac
+
 if [[ -z "$TERMINAL_PHASE" ]]; then
   if [[ "$PROJECT_TYPE" == "spec-only" ]]; then
     TERMINAL_PHASE="2-spec"
@@ -113,6 +126,7 @@ echo "Configuration:"
 echo "  target         = $TARGET"
 echo "  project name   = $PROJECT_NAME"
 echo "  scope          = $SCOPE"
+echo "  lifecycle mode = $LIFECYCLE_MODE"
 echo "  project type   = $PROJECT_TYPE"
 echo "  terminal phase = $TERMINAL_PHASE"
 echo
@@ -129,7 +143,11 @@ cp -a "$SCRIPT_DIR/AGENTS.md" "$TARGET/"
 cp -a "$SCRIPT_DIR/CLAUDE.md" "$TARGET/"   # symlink → AGENTS.md
 cp -a "$SCRIPT_DIR/CHANGELOG.md" "$TARGET/"
 cp -a "$SCRIPT_DIR/LICENSE" "$TARGET/"
+cp -a "$SCRIPT_DIR/.gitignore" "$TARGET/"
 cp -a "$SCRIPT_DIR/README.md" "$TARGET/"
+if [[ -f "$SCRIPT_DIR/ONBOARDING.md" ]]; then
+  cp -a "$SCRIPT_DIR/ONBOARDING.md" "$TARGET/"
+fi
 cp -a "$SCRIPT_DIR/validate.py" "$TARGET/"
 cp -a "$SCRIPT_DIR/playbooks" "$TARGET/"
 cp -a "$SCRIPT_DIR/harness" "$TARGET/"
@@ -167,8 +185,12 @@ rm -f "$DST_STATE"/*.md
 if [[ -d "$SRC_STATE" ]]; then
   # phase.md — keep SCHEMA + frontmatter prose; rewrite header values.
   cp -a "$SRC_STATE/phase.md" "$DST_STATE/phase.md"
-  # audit.md, decisions.md, gaps.md, lessons.md — keep SCHEMA; truncate body to the SCHEMA.
-  for f in audit.md decisions.md gaps.md lessons.md; do
+  # audit.md — keep canonical scaffold, but drop live project-specific content.
+  if [[ -f "$SRC_STATE/audit.md" ]]; then
+    cp -a "$SRC_STATE/audit.md" "$DST_STATE/audit.md"
+  fi
+  # decisions.md, gaps.md, lessons.md — keep SCHEMA; truncate body to the SCHEMA.
+  for f in decisions.md gaps.md lessons.md; do
     if [[ -f "$SRC_STATE/$f" ]]; then
       awk '
         /^-->/ && in_schema { print; in_schema=0; print_cursor=1; next }
@@ -188,35 +210,83 @@ fi
 # Rewrite phase.md header with project-specific values.
 TODAY=$(date -u +%Y-%m-%d)
 PHASE_MD="$DST_STATE/phase.md"
-python3 - "$PHASE_MD" "$PROJECT_NAME" "$SCOPE" "$PROJECT_TYPE" "$TERMINAL_PHASE" "$TODAY" <<'PY'
-import re, sys
-path, name, scope, ptype, term, today = sys.argv[1:7]
-text = open(path).read()
-# Replace the values after "Current phase:", "Terminal phase:", "Scope classification:", "Project type:", "Last updated:".
-text = re.sub(r'(?m)^\*\*Current phase:\*\*.*$', '**Current phase:** 0-audit', text)
-text = re.sub(r'(?m)^\*\*Terminal phase:\*\*.*$', f'**Terminal phase:** {term}', text)
-text = re.sub(r'(?m)^\*\*Scope classification:\*\*.*$', f'**Scope classification:** {scope}', text)
-text = re.sub(r'(?m)^\*\*Project type:\*\*.*$', f'**Project type:** {ptype}' + (f' ({name})' if name else ''), text)
-text = re.sub(r'(?m)^\*\*Last updated:\*\*.*$', f'**Last updated:** {today}', text)
-# Reset Handoff Context triplet and Session Log to empty starter state.
-text = re.sub(
-    r'## Handoff Context.*?(?=## )',
+AUDIT_MD="$DST_STATE/audit.md"
+python3 - "$PHASE_MD" "$AUDIT_MD" "$PROJECT_NAME" "$SCOPE" "$LIFECYCLE_MODE" "$PROJECT_TYPE" "$TERMINAL_PHASE" "$TODAY" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+phase_path, audit_path, name, scope, lifecycle, ptype, term, today = sys.argv[1:9]
+
+phase_text = Path(phase_path).read_text()
+# Replace the values after "Current phase:", "Terminal phase:", "Lifecycle mode:", "Scope classification:", "Project type:", and "Last updated:".
+phase_text = re.sub(r'(?m)^\*\*Current phase:\*\*.*$', '**Current phase:** 0-audit', phase_text)
+phase_text = re.sub(r'(?m)^\*\*Terminal phase:\*\*.*$', f'**Terminal phase:** {term}', phase_text)
+phase_text = re.sub(r'(?m)^\*\*Lifecycle mode:\*\*.*$', f'**Lifecycle mode:** {lifecycle}', phase_text)
+phase_text = re.sub(r'(?m)^\*\*Scope classification:\*\*.*$', f'**Scope classification:** {scope}', phase_text)
+phase_text = re.sub(r'(?m)^\*\*Project type:\*\*.*$', f'**Project type:** {ptype}' + (f' ({name})' if name else ''), phase_text)
+phase_text = re.sub(r'(?m)^\*\*Last updated:\*\*.*$', f'**Last updated:** {today}', phase_text)
+# Reset Integrity Invariants, Handoff Context, and Session Log to empty starter state.
+phase_text = re.sub(
+    r'## Integrity Invariants.*?(?=\n## Handoff Context)',
+    '## Integrity Invariants\n\n- (none yet — first session should record the initial integrity check in Handoff Context.)\n',
+    phase_text,
+    count=1,
+    flags=re.DOTALL,
+)
+phase_text = re.sub(
+    r'## Handoff Context.*?(?=\n## Feature Slices \(if applicable\))',
     (
         '## Handoff Context\n\n'
         'Update before ending a session — this is the primary handoff mechanism between sessions or collaborators.\n\n'
         '**Exit audit (from prior agent):** (none — new project; no prior agent)\n\n'
-        '**In progress:** fresh bootstrap. Next step: read AGENTS.md + playbooks/00-audit.md and begin Phase 0 audit.\n\n'
+        '**In progress:** fresh bootstrap. Next step: read AGENTS.md first, then ONBOARDING.md as companion context, then playbooks/00-audit.md to begin Phase 0 audit.\n\n'
         '**Entry acknowledgment (by receiving agent):** (none — new project; first session)\n\n'
-        '**Next:** start Phase 0 surface audit. Record findings in .agent-state/audit.md per per-surface entry format.\n\n'
+        '**Next:** start Phase 0 surface audit. Record findings in .agent-state/audit.md per per-surface entry format.\n'
     ),
-    text,
+    phase_text,
     count=1,
     flags=re.DOTALL,
 )
-text = re.sub(
-    r'(?m)^\| 20\d\d-.*$\n?', '', text  # strip any demo session-log rows
+phase_text = re.sub(
+    r'## Session Log.*\Z',
+    (
+        '## Session Log\n\n'
+        '| Date | Phase | Duration | Work Done | Decisions Made | Gaps Found | Lessons Learned |\n'
+        '|------|-------|----------|-----------|----------------|------------|-----------------|\n'
+    ),
+    phase_text,
+    count=1,
+    flags=re.DOTALL,
 )
-open(path, 'w').write(text)
+Path(phase_path).write_text(phase_text)
+
+audit_file = Path(audit_path)
+if audit_file.exists():
+    audit_text = audit_file.read_text()
+    schema_end = audit_text.find("-->")
+    strategy_intro = re.search(r'(?s)(# Audit Register.*?)(?=\n## Strategy)', audit_text)
+    surface_intro = re.search(r'(?s)(## Surface Audits.*)\Z', audit_text)
+    if schema_end != -1 and strategy_intro:
+        surface_section = (
+            surface_intro.group(1).strip()
+            if surface_intro
+            else '## Surface Audits\n\n(One `### {SurfaceName}` entry per surface. Use the entry format in the SCHEMA above. See `playbooks/00-audit.md` Surfaces for the full list and `playbooks/00-audit.md` Per-Surface Entry Format for field semantics.)'
+        )
+        audit_text = (
+            audit_text[: schema_end + 3].rstrip()
+            + "\n\n"
+            + strategy_intro.group(1).strip()
+            + "\n\n"
+            + "## Strategy\n\n"
+            + "**Approach:** \n\n"
+            + f"**Lifecycle mode:** {lifecycle}\n\n"
+            + "**Rationale:** \n\n"
+            + "**Top risks:**\n- \n\n"
+            + surface_section
+            + "\n"
+        )
+        audit_file.write_text(audit_text)
 PY
 
 # Sanity-check state reset. If any aegis-era identifier entry or session-log row
@@ -251,11 +321,10 @@ if (cd "$TARGET" && python3 validate.py); then
   echo
   echo "Next steps:"
   echo "  1. cd $TARGET"
-  echo "  2. read ONBOARDING.md and AGENTS.md"
+  echo "  2. read AGENTS.md first, then ONBOARDING.md as companion context"
   echo "  3. begin Phase 0 audit per playbooks/00-audit.md"
   echo
   if [[ -f "$SCRIPT_DIR/ONBOARDING.md" ]]; then
-    cp -a "$SCRIPT_DIR/ONBOARDING.md" "$TARGET/" 2>/dev/null || true
     echo "  (ONBOARDING.md copied to target.)"
   fi
 else

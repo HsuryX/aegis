@@ -1,6 +1,6 @@
 # aegis — Onboarding
 
-A 5-minute introduction for new projects adopting aegis. The canonical rules live in `AGENTS.md` and `playbooks/`; this file is a reader's guide, not a source of truth. When any statement here disagrees with a playbook, the playbook wins.
+A 5-minute introduction for new projects adopting aegis. `AGENTS.md` is the canonical operational entrypoint, and `playbooks/` own the detailed rules; this file is a reader's guide, not a source of truth. When any statement here disagrees with `AGENTS.md` or a playbook, the canonical file wins.
 
 ## Vocabulary at a glance
 
@@ -9,45 +9,50 @@ One-page cheat sheet — everything a cold reader needs so `AGENTS.md` reads wit
 **Phase classification (see `playbooks/00-audit.md` Project Scope Classification):**
 - `micro` — single-file utility or one-off script; Phases 1 & 2 skipped, goes 0 → 3
 - `small` — single-purpose library or CLI; Phases 1 & 2 abbreviated
-- `standard` — typical application, 2–10 subsystems; full four-phase workflow
-- `large` — multi-subsystem system with ≥3 contributors; full workflow + multi-agent coordination
+- `standard` — typical application, 2–10 subsystems; full four-phase workflow by default
+- `large` — multiple teams or subsystems with independent release cycles; full workflow + Decomposition Rule. Multi-agent coordination loads only when ≥ 2 agents are active
+
+**Lifecycle mode** (Phase 0 strategy axis): `finite-delivery` — bounded endpoint; `steady-state` — recurring cycles, returning to Phase 0 after terminal housekeeping. Same default four-phase path either way.
+
+**Bounded-change cycle** (`playbooks/00-audit.md`): for an existing project whose accepted decisions and reviewed specs already fully cover the requested work, Phase 0 may mark Phases 1–2 `not-applicable` for that cycle and let the work go 0 → 3. This is re-use of existing design/spec truth, not a shortcut around it.
+
+**Operating roles** (`README.md`): daily operator first, framework maintainer second, adopter third.
 
 **Verdict vocabulary** (Phase 0 audit outputs): `keep` · `keep-with-conditions` · `redesign` · `delete`. No implicit fifth state.
 
 **Gate outcomes** (Phase 0–3 exit): `Go` · `Conditional Go` · `Hold` · `Recycle` · `Kill`. See `playbooks/principles-gates.md` Gate Outcome Vocabulary.
 
-**Gap type taxonomy** (9 types — `playbooks/gaps.md` canonical): `evidence` (spike needed) · `analysis` (deeper thinking) · `decision` (new decision required) · `framework` (framework rule is wrong) · `deviation` (agreed departure with expiry) · `conditional` (condition on keep-with-conditions) · `scope-reduction` (tracked deferral) · `failure-pattern` (anti-pattern detected) · `grandfathered` (pre-adoption artifact with expiry).
+**Completion statuses** (task/session reports, not gate outcomes): `DONE` · `DONE_WITH_CONCERNS` · `BLOCKED` · `NEEDS_CONTEXT`. See `playbooks/principles.md` Completion Status Protocol.
 
-**Label families** (7 prefixes — `playbooks/identifiers.md`): `D-{n}` design decisions · `G-{n}` gaps · `FR-{n}` functional requirements · `NFR-{n}` non-functional · `SC-{n}` success criteria · `NG-{n}` non-goals · `L-{n}` lessons.
+**Gap type taxonomy** (9 types — `playbooks/gaps.md` canonical): `evidence` (spike needed) · `analysis` (deeper thinking) · `decision` (new decision required) · `framework` (framework rule is wrong) · `deviation` (framework-rule exception with expiry) · `conditional` (verdict/gate carry-forward obligation) · `scope-reduction` (explicit specified-requirement deferral) · `failure-pattern` (anti-pattern detected) · `grandfathered` (pre-adoption artifact with expiry).
 
-**D-1 … D-12 Required Decisions** (Phase 1 standard/large — `playbooks/01-design.md` is canonical): D-1 Architecture (subsystems, boundaries, dependency direction) · D-2 Authority model (who owns truth for each concept) · D-3 Public contracts (interfaces + machine-readable schema for cross-trust-boundary) · D-4 Data model (object shapes, persistence, wire format) · D-5 Security model (trust boundaries, secrets, auth, STRIDE when applicable) · D-6 Error and recovery model · D-7 Naming model (canonical terms + Naming Table) · D-8 Configuration model · D-9 Observability model (logging, metrics, tracing — OpenTelemetry (OTel) cited when applicable) · D-10 Test strategy (pyramid, per-layer floors, trust-boundary coverage) · D-11 Repository structure (scope-conditional — standard/large REQUIRED; small MAY be N/A) · D-12 Documentation structure (scope-conditional) · D-13+ project-specific (common candidates: Contract Format, Subsystem Ownership, Accessibility Model).
+**Label families** (8 prefixes — `playbooks/identifiers.md`): `D-{n}` design decisions · `G-{n}` gaps · `FR-{n}` functional requirements · `NFR-{n}` non-functional · `PSC-{n}` product success criteria · `SC-{n}` spec conformance criteria · `NG-{n}` product non-goals · `L-{n}` lessons.
 
 **Surfaces** (Phase 0 audit categories — `playbooks/00-audit.md`): Product · Architecture · Runtime · Operations · Security · Quality · Organization. Scope determines which are required (micro: Product+Security; small: Product+Architecture+Security+Quality; standard/large: all 7).
 
-**Failure patterns** (12 named — `playbooks/failure-patterns.md`): each has a Counter Rule cross-referenced from normative playbooks. Consulted by reference when diagnosing a rationalization.
+**Required Decisions / failure patterns**: keep these by reference, not from memory. Use `playbooks/01-design.md` for D-1 … D-12 and `playbooks/failure-patterns.md` for the named anti-pattern catalog.
 
 ## Five key terms
 
-- **Phase** — one of four stages: `0-audit` → `1-design` → `2-spec` → `3-implement`. Each phase has a gate with mandatory criteria; the project MUST NOT advance to the next phase until the gate passes. See `AGENTS.md` Phase Gates.
+- **Phase** — one of four stages: `0-audit` → `1-design` → `2-spec` → `3-implement`. Each phase has a gate with mandatory criteria; the project MUST NOT advance to the next phase until the gate passes. Existing projects may use the bounded-change 0 → 3 rule only when `00-audit.md` says the current work is already fully covered by existing design/spec truth. Lifecycle mode is a separate axis: in `steady-state`, terminal completion closes the current cycle rather than the product forever. See `AGENTS.md` Phase Gates.
 - **Surface** — one of the audit categories examined in Phase 0 (Product, Architecture, Runtime, Operations, Security, Quality, Organization, plus any project-specific additions). Earlier surfaces constrain later ones. See `playbooks/00-audit.md`.
 - **Verdict** — the disposition assigned to every existing element during Phase 0 audit: `keep` / `keep-with-conditions` / `redesign` / `delete`. Every element MUST receive exactly one verdict; there is no implicit fifth state. See `playbooks/glossary.md` verdict.
-- **Gap** — unresolved information or missing work tracked in `.agent-state/gaps.md`. Nine gap types are defined in `playbooks/gaps.md`; every gap has a severity, type, trigger, and resolution path.
+- **Gap** — unresolved information or missing work tracked in `.agent-state/gaps.md`. Nine gap types are defined in `playbooks/gaps.md`; every gap has a severity, type, lifecycle status, and resolution path, and some types also carry trigger or expiry fields.
 - **Decision** — resolved architectural choice recorded in `.agent-state/decisions.md` with a `D-{n}` identifier. D-1..D-12 are reserved for the Required Decisions in `playbooks/01-design.md`; D-13+ are project-specific.
 
 ## Reading order for your first session
 
-On the first session, read these files in this order:
+For the first operational session, start with `AGENTS.md` and follow its Session Start Protocol. Use this file as a companion explainer, not as an alternate startup path.
 
-1. This file (`ONBOARDING.md`) — vocabulary at a glance + primer
-2. `playbooks/glossary.md` — canonical definitions (artifact, canonical, gap, spec, surface, verify, verdict, etc.); read this BEFORE AGENTS.md so forward references resolve as you encounter them
-3. `AGENTS.md` — canonical entry; Session Start Protocol + Foundational Principle + Quality Primacy + Verdict Discipline + Phase Gates + Amendment Protocol
-4. `playbooks/principles.md` — Tier 0 cross-phase rules (always-load core): Normative Language, Rule Priority, Quality Seeking, Autonomy Protocol, Prohibited Shortcuts, Rationalization Prevention, Required Behaviors
-5. `playbooks/00-audit.md` — you always start in Phase 0. Read Quantitative anchors + Decision tree + Worked Example to calibrate.
+1. `AGENTS.md` — canonical operational entrypoint: Session Start Protocol, load map, phase boundaries, workspace discipline
+2. `playbooks/principles.md` — always-load cross-phase doctrine: Normative Language, Rule Priority, Quality Seeking, Autonomy Protocol, Prohibited Shortcuts, Rationalization Prevention, Required Behaviors
+3. `playbooks/00-audit.md` — you always start in Phase 0. Read Quantitative anchors + Decision tree + Worked Example to calibrate.
+4. `playbooks/glossary.md` — canonical definitions (artifact, canonical, gap, spec, surface, verify, verdict, etc.) for any term you need while reading the files above
 
 Load on demand (when their trigger condition fires):
 
-- `playbooks/principles-gates.md` (Tier 1) — before each phase gate, when preparing an amendment, or when scope classification changes
-- `playbooks/principles-conditional.md` (Tier 2) — when measuring session-start Context Budget, working multi-agent, or resolving a rule edge case
+- `playbooks/principles-gates.md` — before each phase gate, when preparing an amendment, or when scope classification changes
+- `playbooks/principles-conditional.md` — when measuring session-start Context Budget, working multi-agent, preparing a formal handoff, or resolving a rule edge case
 - `playbooks/standards.md` — when evaluating, specifying, or producing code
 - `playbooks/01-design.md`, `02-spec.md`, `03-implement.md` — when the phase advances
 - `playbooks/identifiers.md`, `gaps.md`, `failure-patterns.md`, `zen.md`, `security-threat-model.md`, `release-readiness.md`, `automation.md` — consulted by reference
@@ -58,10 +63,10 @@ Load on demand (when their trigger condition fires):
 AGENTS.md
   │  (Session Start Protocol step 4)
   ▼
-playbooks/principles.md   (Tier 0 — always-load)
+playbooks/principles.md   (always-load doctrine)
   │
-  ├── principles-gates.md         (Tier 1 — load at gate / amendment)
-  ├── principles-conditional.md   (Tier 2 — load when triggered)
+  ├── principles-gates.md         (gate / amendment rigor)
+  ├── principles-conditional.md   (triggered coordination / handoff / edge cases)
   ├── glossary.md, identifiers.md, standards.md
   ├── failure-patterns.md, gaps.md, zen.md
   │
@@ -82,14 +87,16 @@ playbooks/00-audit.md ─► 01-design.md ─► 02-spec.md ─► 03-implement.
 - [ ] Read `playbooks/principles.md` in full
 - [ ] Read `playbooks/00-audit.md` in full (focus on Project Scope Classification → Quantitative anchors)
 - [ ] Classify project scope in `.agent-state/phase.md` (micro / small / standard / large)
+- [ ] Choose lifecycle mode in `.agent-state/phase.md` and `.agent-state/audit.md` Strategy (`finite-delivery` / `steady-state`)
+- [ ] For existing projects, decide whether the current work item is full-cycle or a bounded-change 0 → 3 case under `playbooks/00-audit.md`
 - [ ] Begin the Product surface audit per `playbooks/00-audit.md` Per-Surface Entry Format
 
 ## When stuck
 
 - Terminology ambiguous → `playbooks/glossary.md`
-- A framework rule feels wrong → use the Amendment Protocol (`AGENTS.md` → Amendment Protocol). Do NOT self-authorize a deviation; propose the amendment to the user.
-- Gate failing on a judgment call → `playbooks/principles-gates.md` Gate Outcome Vocabulary; report the outcome as `Hold` or `Conditional Go` with specific evidence
-- Scope feels too large for one session → `AGENTS.md` Session Start Protocol step 9; propose session sequencing to the user
+- A framework rule feels wrong → use the Amendment Protocol in `playbooks/principles-gates.md`. Do NOT self-authorize a deviation; propose the amendment to the user.
+- Gate evaluation or failure handling → `playbooks/principles-gates.md` Gate Outcome Vocabulary; report the actual gate outcome as `Go`, `Conditional Go`, `Hold`, `Recycle`, or `Kill` with specific evidence, and report task/session status separately as `DONE`, `DONE_WITH_CONCERNS`, `BLOCKED`, or `NEEDS_CONTEXT` per `playbooks/principles.md`
+- Scope feels too large for one session → `AGENTS.md` Session Start Protocol step 8; propose session sequencing to the user
 - Multiple concerns collide in one session → same as above; the defense against the `kitchen-sink-session` failure pattern
 
 ## What this framework is NOT
@@ -97,15 +104,16 @@ playbooks/00-audit.md ─► 01-design.md ─► 02-spec.md ─► 03-implement.
 - NOT a linter or a static analyzer. The framework governs *how the project is built*, not the syntax of individual files.
 - NOT a replacement for language-specific standards. See `playbooks/standards.md` for aegis's minimum bar; layer language-specific guidelines on top.
 - NOT prescriptive about tooling beyond hooks and CI. You choose the build system, test runner, CI provider, and deployment model — the framework provides the governance, you provide the tools.
-- NOT a one-shot setup. aegis is an ongoing discipline: every session runs Session Start Protocol, every gate verifies, every amendment goes through Amendment Protocol.
+- NOT a one-shot setup. aegis is an ongoing discipline: every session runs Session Start Protocol, every gate verifies, every amendment goes through the Amendment Protocol in `playbooks/principles-gates.md`.
 
 ## Framework rules vs. project state
 
-This section is canonical for the read/write split between framework and project. `README.md § Structure` is canonical for the file inventory; `README.md § Relationship to AGENTS.md and CLAUDE.md` is canonical for the symlink mechanics. Do not duplicate those — cross-reference them when needed.
+This section summarizes the read/write split; `AGENTS.md`, D-2, D-11, and D-12 remain canonical for the rules themselves. `README.md` is a projection and should be cross-referenced as a guide, not treated as a canonical owner.
 
 aegis ships as two kinds of files:
 
-- **Framework rules** — `AGENTS.md`, `CLAUDE.md` symlink, everything under `playbooks/`, and `harness/` adapters. Read-only from the agent's perspective. Changes flow through the Amendment Protocol.
+- **Framework rules** — `AGENTS.md`, `CLAUDE.md` symlink, and everything under `playbooks/`. Read-only from the agent's perspective. Changes flow through the Amendment Protocol in `playbooks/principles-gates.md`.
+- **Maintainer-controlled Claude Code harness surfaces** — `harness/claude-code/settings.json` and `harness/claude-code/skills/` are the canonical shipped source/template locations and MAY be configured by the human maintainer during setup. `settings.json` is not active from file presence alone; it becomes active only when synced into Claude Code's real loaded settings path.
 - **Project state** — everything under `.agent-state/`. The agent reads and writes these every session. They record your project's audit findings, decisions, gaps, lessons, and session log.
 
-When you copy aegis into your project, `.agent-state/` becomes YOUR project's working memory; `playbooks/` and `harness/` remain aegis's rules. Project-local amendments are recorded in your `.agent-state/gaps.md` with type `deviation` (temporary) or `framework` (proposed upstream) — they do NOT propagate back to aegis unless you file them upstream.
+When you copy aegis into your project, `.agent-state/` becomes YOUR project's working memory; `AGENTS.md` and `playbooks/` remain aegis's rules, while the shipped Claude Code settings/skills surfaces stay maintainer-controlled setup artifacts. Temporary framework-rule exceptions are recorded in your `.agent-state/gaps.md` with type `deviation`; proposed framework-rule changes use type `framework` — neither propagates back to aegis unless you file it upstream.

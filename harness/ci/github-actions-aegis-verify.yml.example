@@ -17,10 +17,9 @@
 #
 # WHY THIS FILE SHIPS IN aegis
 #   `playbooks/automation.md` Principle 3 ("CI mirrors local verification") requires
-#   adopters to wire a CI job equivalent to the PostToolUse + Stop hooks that Claude
-#   Code runs locally. Codex and Cursor have no hook equivalent, so CI is the only
-#   mechanical check for agents that lack PostToolUse. This template provides the
-#   baseline so every adopter does not re-derive it from scratch.
+#   adopters to wire a CI job equivalent to their local verification path. Some
+#   harnesses have local hook support and some do not; this template is the shared
+#   repo-level backstop once installed under `.github/workflows/`.
 #
 # TRIGGER DESIGN
 #   - `pull_request`: catches regressions before merge — the primary gate.
@@ -84,9 +83,8 @@ jobs:
 
       - name: aegis validate
         if: always()
-        # Runs the seven mechanical checks bundled with aegis. Fails the build on any
-        # framework-integrity violation (stale frontmatter, missing SCHEMA blocks,
-        # broken cross-references, version mismatch, non-verifiable Evidence cells).
+        # Runs aegis's mechanical validator. The exact check list evolves with the
+        # framework, so `validate.py` itself is the canonical source.
         run: python3 validate.py
 
       - name: Placeholder scan

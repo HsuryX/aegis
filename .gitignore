@@ -11,6 +11,9 @@ node_modules/
 # Python (validate.py cache)
 __pycache__/
 *.pyc
+.pytest_cache/
+.coverage
+htmlcov/
 
 # OS artifacts
 .DS_Store

@@ -27,18 +27,13 @@ Canonical source: `playbooks/standards.md`. This rule file is a thin pointer —
 - TDD workflow default: failing test → minimal implementation → refactor
 - Tests MUST verify behavior described in specifications, not implementation details
 - Tests MUST be isolated (no shared mutable state, no execution-order dependency)
-- Every test MUST cite the `SC-{n}` or `FR-{n}` it validates (commit trailer, test-name suffix, or in-file comment)
+- Every test MUST cite the path-qualified `specs/<spec>.md:SC-{n}` or `specs/<spec>.md:FR-{n}` it validates (`covers_specs_auth_md_SC_3`-style suffix or in-file `Covers:` comment; commit trailers are optional metadata only)
 - Deterministic test data: factories, fixtures, or seeded generators; tests MUST NOT depend on production data or unseeded randomness
 - Every bug fix MUST include a test that reproduces the bug before the fix
 
 ## Contract formats (cross-trust-boundary interfaces)
 
-- **REST APIs** → OpenAPI 3.1 (`openapi.yaml` or `openapi.json`)
-- **RPC / gRPC** → protobuf
-- **Event / streaming** → AsyncAPI 2.6
-- **Data validation** → JSON Schema 2020-12
-- **CLI** → machine-readable help or `--json` schema
-- Internal-only interfaces MAY record `schema: N/A — internal only` with justification
+- Canonical Contract Formats menu lives in `playbooks/standards.md` § Contract Formats. Use that section for the allowed machine-readable forms and the internal-only `schema: N/A — internal only` rule.
 
 ## Accessibility testing (when UI is present)
 
