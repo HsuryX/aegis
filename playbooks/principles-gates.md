@@ -1,27 +1,16 @@
 <!--
 SYNC-IMPACT
-- version: 1.0.0 → 1.1.0
+- version: 1.1.0 → 1.2.0
 - bump: MINOR
 - date: 2026-04-25
-- rationale: Framework refinement release. Adds the bounded-change 0 -> 3 path for already-governed work (`00-audit.md`); the harness security-claim model with explicit control-class (`Executable` / `Backstop` / `Advisory`) and activation-state (`Active now` / `Shipped but inactive` / `Not available here`) classification (`harness/capability-matrix.md`); the Canonical Dependency Edges DAG seeding the Whole-System Composition Check (`01-design.md`); the Adversarial Review Protocol Per-phase timing-hooks table (`principles-gates.md`); the Scope-Proportional gate-protocol mini-matrix (`principles-gates.md` Scope-Proportional Ceremony); the `phase regression` glossary entry; and `validate.py check_traceability` — a file-level `Implements:`/`Covers:` rollup (warning-only, vacuous on the framework repo itself). Extends Required Behaviors #7 with an archive-decay re-evaluation rule for consulted archive entries >= 12 months old (`principles.md`). Expands the existing Cold Read perspective with a concrete protocol (`principles-gates.md`). Adds a date-only UTC variant to the scope-reduction sign-off format for `micro`/`small` projects (`00-audit.md` ceremony matrix + `release-readiness.md` checklist); the full git-email anchored form remains for `standard`/`large`. Relaxes Session Start Protocol Step 3 — the integrity block now accepts any form that cites countable or tool-checkable evidence; the prior templated form is preserved as a reference example. Promotes the implementation-boundary rule to a dedicated `## Implementation Boundary` section in `AGENTS.md` (v1.0.0 carried the rule as a paragraph below the Phase Gates table); the new section's bounded-change summary paragraph points at `00-audit.md` for the full Bounded-Change Rule; surfaces additional Phase 1 gate items (Authority model, Whole-System Composition Check, threat-model applicability) and Phase 2 Proof-class declaration in the `AGENTS.md` Phase Gates table; decouples the Phase 1 threat-model gate from `specs/threat-model.md` artifact-existence (binds to whichever path D-5 declares); reformats the `AGENTS.md` Workspace Discipline second paragraph from a single run-on into a 6-bullet list (preserving v1.0.0 content and adding a Bash-subprocess-gap caveat); trims the scope-reduction marker phrase list (`validate.py` `_DEFERRAL_PHRASES`, mirrored in `standards.md` / `03-implement.md` / `harness/cursor/.cursor/rules/phase-3.mdc`) to unambiguous multi-word forms only, dropping false-positive-prone tokens. De-duplicates the Verdict Discipline definition (`AGENTS.md` is sole canonical owner; glossary holds a one-paragraph redirect); removes the four per-phase `## Adversarial Gate Check` stanzas (replaced by the new Per-phase timing-hooks table); removes the redundant placeholder grep at `02-spec.md` Quality Checks (the Phase Gate scan is a strict superset). Compresses Codex and Cursor harness READMEs by deferring universal-backstop guidance to `harness/capability-matrix.md`. Required Behaviors #8 grep formula relocates from `principles.md` body to `automation.md` Lessons-Gap Backstop. Removes the `validate.py` Verification Coverage Matrix anchor-diversity check; its enforcement contract is already covered by check 7 (evidence verifiability). SemVer MINOR — additive and refinement; no rule becomes stricter than v1.0.0 in a way that invalidates prior compliance.
+- rationale: Framework support-scope release; see CHANGELOG.md#v120 for the evidence and migration summary.
 - downstream_review_required:
-  - README.md
-  - ONBOARDING.md
   - CHANGELOG.md
-  - harness/capability-matrix.md
-  - harness/claude-code/README.md
-  - harness/codex/README.md
-  - harness/cursor/README.md
-  - harness/ci/README.md
-  - harness/claude-code/hooks-cookbook.md
-  - harness/claude-code/skills/phase-status/SKILL.md
-  - validate.py
-  - tools/bootstrap.sh
 -->
 ---
 id: playbooks/principles-gates
 title: Cross-Phase Principles — Gate/Amendment-Scoped (Tier 1)
-version: 1.1.0
+version: 1.2.0
 last_reviewed: 2026-04-25
 applies_to:
   - phase: all
@@ -31,6 +20,7 @@ mechanical_items: 0
 judgment_items: 0
 mixed_items: 0
 references:
+  - CHANGELOG.md
   - AGENTS.md
   - playbooks/principles.md
   - playbooks/00-audit.md
@@ -158,18 +148,20 @@ When a framework rule needs to change:
 2. **Agent proposes to user** — the agent MUST present the gap entry and proposed amendment; the agent MUST NOT proceed as if the amendment is already in effect
 3. **Precedent requirement (no speculative rules)** — the proposed amendment MUST cite concrete precedent from one of: (a) `G-{n}` gap with observed incident; (b) `failure-patterns.md` entry observed at least once; (c) `L-{n}` lesson; (d) dated session-log incident; (e) cross-framework convergence — the proposed pattern is documented in ≥ 3 distinct mature external frameworks (one pattern occurrence per framework suffices) with the framework names and URLs cited in the CHANGELOG rationale. Without precedent: downgrade to narrative (CHANGELOG only) or reject.
 4. **User decides** — the user MAY approve, modify, or reject the amendment
-5. **If approved** — the user or agent authoring the change MUST record the amendment in the session log with the date and rationale. The version bump MUST be classified per the Versioning Policy in `CHANGELOG.md` as MAJOR, MINOR, or PATCH; the author MUST update `AGENTS.md` Version banner, every affected playbook's frontmatter `version:` field, and the `CHANGELOG.md` `[Unreleased]` section (or a new versioned section if shipping immediately) before the amendment is considered shipped. The CHANGELOG entry MUST follow Keep a Changelog format with `Added` / `Changed` / `Deprecated` / `Removed` / `Fixed` / `Security` subsections as applicable. Every changed canonical framework file (`AGENTS.md`, `playbooks/*.md`) MUST be prepended with a SYNC-IMPACT HTML comment per [Sync Impact Reports](#sync-impact-reports) below. After updating the framework files, the author MUST run a **diff-scoped derived-document sweep** for files that paraphrase, abbreviate, or enumerate the changed rule (skills `SKILL.md`, harness READMEs, `.mdc` files, `README.md`, similar projections) and MUST update every stale derived file in the same change set. The author MUST run `python3 validate.py` clean before the amendment is considered shipped.
+5. **If approved** — the user or agent authoring the change MUST record the amendment evidence with the date and rationale. The version bump MUST be classified per the Versioning Policy in `CHANGELOG.md` as MAJOR, MINOR, or PATCH; the author MUST update `AGENTS.md` Version banner, every affected playbook's frontmatter `version:` field, and the `CHANGELOG.md` `[Unreleased]` section (or a new versioned section if shipping immediately) before the amendment is considered shipped. The CHANGELOG entry MUST follow Keep a Changelog format with `Added` / `Changed` / `Deprecated` / `Removed` / `Fixed` / `Security` subsections as applicable. Every changed canonical framework file (`AGENTS.md`, `playbooks/*.md`) MUST be prepended with a compact SYNC-IMPACT HTML comment per [Sync Impact Reports](#sync-impact-reports) below. After updating the framework files, the author MUST run a **diff-scoped derived-document sweep** for files that paraphrase, abbreviate, or enumerate the changed rule (skills `SKILL.md`, harness READMEs, `README.md`, similar projections) and MUST update every stale derived file in the same change set. The author MUST run `python3 validate.py` clean before the amendment is considered shipped.
 
    **Finite amendment evidence bundle.** Before the amendment is marked shipped, the author MUST record one bounded evidence bundle under a session anchor in `.agent-state/phase.md`. The bundle MUST cite verifiable references for: (a) the user approval or user directive that authorized the amendment, (b) the semver classification plus changed file set, (c) each changed canonical framework file's SYNC-IMPACT update, (d) the diff-scoped derived-document sweep result, and (e) the clean `python3 validate.py` run. The bundle verifies the amendment control loop once per amendment; it MUST NOT expand into per-rule recursive self-compliance accounting.
 
-   **Fresh-context adversarial review for semantic amendments.** For amendments classified MINOR or MAJOR, the author MUST run a fresh-context adversarial review per the Adversarial Review Protocol above against the changed normative text and any directly affected derived guidance before the amendment is marked shipped. The amendment evidence bundle MUST cite the resulting review artifact. PATCH amendments MAY use author review only.
+   **Clean-template framework release exception.** In the aegis framework repository itself, when a release is designated as a clean-template framework release, the finite amendment evidence bundle MAY live in `CHANGELOG.md` instead of active `.agent-state/phase.md`. The CHANGELOG entry MUST name the release authority, semver class, changed-file categories, derived-document sweep, review method and disposition, verification commands, and clean-template confirmation. The active `.agent-state/` ledgers MUST then end with no tracked diff. Teams that require durable review chain-of-custody MUST either retain a non-template review artifact outside `.agent-state/` or decline this clean-template exception for that release.
+
+   **Fresh-context adversarial review for semantic amendments.** For amendments classified MINOR or MAJOR, the author MUST run a fresh-context adversarial review per the Adversarial Review Protocol above against the changed normative text and any directly affected derived guidance before the amendment is marked shipped. Except under the clean-template framework release exception above, the amendment evidence bundle MUST cite the resulting review artifact. Under the clean-template exception, the CHANGELOG evidence entry MUST summarize the review method, findings, and dispositions and MUST state whether a durable transcript artifact was retained. PATCH amendments MAY use author review only.
 6. **Temporary deviations** — if the user approves a deviation without amending the framework, the agent MUST record it in `gaps.md` with type `deviation` and an explicit expiry condition (e.g., `until Phase 2 completes` or `until D-{n} is revised`)
 
 Temporary deviations that outlive their expiry condition MUST be re-evaluated. The agent MUST flag expired deviations at session start. If more than 3 active deviations exist simultaneously, the agent MUST report degraded governance status to the user — accumulated deviations may indicate the framework needs amendment rather than continued deviation.
 
 ## Sync Impact Reports
 
-When an approved framework amendment ships under the Amendment Protocol above, the amended file MUST be prepended with a SYNC-IMPACT HTML comment. This comment serves two roles: (1) an audit trail of what changed and why, (2) a forward-pointer telling future session-start agents which downstream files require re-review.
+When an approved framework amendment ships under the Amendment Protocol above, the amended file MUST be prepended with a compact SYNC-IMPACT HTML comment. This comment is a routing pointer, not the release narrative; detailed change explanations live in `CHANGELOG.md`.
 
 **Format** (canonical — the comment MUST be an HTML comment and MUST include all five fields below):
 
@@ -179,12 +171,14 @@ SYNC-IMPACT
 - version: {prior}.{prior}.{prior} → {new}.{new}.{new}
 - bump: MAJOR | MINOR | PATCH
 - date: {YYYY-MM-DD}
-- rationale: {one-paragraph explanation citing a `G-{n}` gap, a `failure-patterns.md` entry, an `L-{n}` lesson, a dated session-log incident, or cross-framework precedent per the Amendment Protocol above}
+- rationale: {short explanation or `CHANGELOG.md#anchor` pointer citing the release rationale}
 - downstream_review_required:
   - {path/to/derived/file.md — what paraphrase or enumeration needs re-review}
   - (repeat one line per file, or leave the list empty if no derived files reference the changed content)
 -->
 ```
+
+SYNC-IMPACT comments MUST stay short enough to scan during session start. The whole comment SHOULD stay under 12 lines; the validator enforces this compact shape for new amendments.
 
 **Required fields** (a SYNC-IMPACT comment is malformed if any of these is missing):
 
@@ -193,7 +187,7 @@ SYNC-IMPACT
 | `version` | `X.Y.Z → A.B.C` | Prior and new canonical versions |
 | `bump` | `MAJOR` \| `MINOR` \| `PATCH` | Classification per `CHANGELOG.md` Versioning Policy |
 | `date` | `YYYY-MM-DD` | Amendment ship date |
-| `rationale` | ≥ 30 characters, cites precedent | Why this change is necessary (per Precedent Requirement) |
+| `rationale` | ≥ 30 characters, or points to a `CHANGELOG.md#anchor` release rationale | Why this change is necessary |
 | `downstream_review_required` | List of relative paths; empty list allowed | Files that paraphrase or enumerate the changed content |
 
 **Version bump classification** (one of MAJOR / MINOR / PATCH; see `CHANGELOG.md` Versioning Policy for full semantics):
@@ -204,8 +198,8 @@ SYNC-IMPACT
 **Writer responsibilities** when creating or updating a SYNC-IMPACT comment:
 
 1. The writer MUST populate all REQUIRED fields before marking the amendment as complete.
-2. The `downstream_review_required` list MUST be generated by a diff-scoped search for forward references to the changed content — every file that paraphrases, abbreviates, or enumerates the changed rule MUST be listed. The agent SHOULD use grep as the mechanical starting point, scoped to the changed concepts or renamed terms, and SHOULD cross-check with the Terminology blocks in each playbook (a term defined or redefined in the amendment MUST trigger re-review of every file that references that term).
-3. The `rationale` field MUST cite either a `G-{n}` gap entry that drove the amendment, a named failure pattern from `failure-patterns.md`, or a one-sentence "scope expansion per user directive" when the amendment is part of a planned wave (such as this meta-improvement project).
+2. The `downstream_review_required` list MUST be generated by a diff-scoped search for forward references to the changed content. For repository-wide releases, the list MAY point only to `CHANGELOG.md` when that CHANGELOG entry names the derived files or file categories re-reviewed.
+3. The `rationale` field MUST either cite the concrete precedent directly or point to a CHANGELOG release anchor that records the precedent and migration summary.
 
 **Reader responsibilities** at session start (per `AGENTS.md` Session Start Protocol step 3):
 

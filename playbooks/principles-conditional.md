@@ -1,27 +1,16 @@
 <!--
 SYNC-IMPACT
-- version: 1.0.0 → 1.1.0
+- version: 1.1.0 → 1.2.0
 - bump: MINOR
 - date: 2026-04-25
-- rationale: Framework refinement release. Adds the bounded-change 0 -> 3 path for already-governed work (`00-audit.md`); the harness security-claim model with explicit control-class (`Executable` / `Backstop` / `Advisory`) and activation-state (`Active now` / `Shipped but inactive` / `Not available here`) classification (`harness/capability-matrix.md`); the Canonical Dependency Edges DAG seeding the Whole-System Composition Check (`01-design.md`); the Adversarial Review Protocol Per-phase timing-hooks table (`principles-gates.md`); the Scope-Proportional gate-protocol mini-matrix (`principles-gates.md` Scope-Proportional Ceremony); the `phase regression` glossary entry; and `validate.py check_traceability` — a file-level `Implements:`/`Covers:` rollup (warning-only, vacuous on the framework repo itself). Extends Required Behaviors #7 with an archive-decay re-evaluation rule for consulted archive entries >= 12 months old (`principles.md`). Expands the existing Cold Read perspective with a concrete protocol (`principles-gates.md`). Adds a date-only UTC variant to the scope-reduction sign-off format for `micro`/`small` projects (`00-audit.md` ceremony matrix + `release-readiness.md` checklist); the full git-email anchored form remains for `standard`/`large`. Relaxes Session Start Protocol Step 3 — the integrity block now accepts any form that cites countable or tool-checkable evidence; the prior templated form is preserved as a reference example. Promotes the implementation-boundary rule to a dedicated `## Implementation Boundary` section in `AGENTS.md` (v1.0.0 carried the rule as a paragraph below the Phase Gates table); the new section's bounded-change summary paragraph points at `00-audit.md` for the full Bounded-Change Rule; surfaces additional Phase 1 gate items (Authority model, Whole-System Composition Check, threat-model applicability) and Phase 2 Proof-class declaration in the `AGENTS.md` Phase Gates table; decouples the Phase 1 threat-model gate from `specs/threat-model.md` artifact-existence (binds to whichever path D-5 declares); reformats the `AGENTS.md` Workspace Discipline second paragraph from a single run-on into a 6-bullet list (preserving v1.0.0 content and adding a Bash-subprocess-gap caveat); trims the scope-reduction marker phrase list (`validate.py` `_DEFERRAL_PHRASES`, mirrored in `standards.md` / `03-implement.md` / `harness/cursor/.cursor/rules/phase-3.mdc`) to unambiguous multi-word forms only, dropping false-positive-prone tokens. De-duplicates the Verdict Discipline definition (`AGENTS.md` is sole canonical owner; glossary holds a one-paragraph redirect); removes the four per-phase `## Adversarial Gate Check` stanzas (replaced by the new Per-phase timing-hooks table); removes the redundant placeholder grep at `02-spec.md` Quality Checks (the Phase Gate scan is a strict superset). Compresses Codex and Cursor harness READMEs by deferring universal-backstop guidance to `harness/capability-matrix.md`. Required Behaviors #8 grep formula relocates from `principles.md` body to `automation.md` Lessons-Gap Backstop. Removes the `validate.py` Verification Coverage Matrix anchor-diversity check; its enforcement contract is already covered by check 7 (evidence verifiability). SemVer MINOR — additive and refinement; no rule becomes stricter than v1.0.0 in a way that invalidates prior compliance.
+- rationale: Framework support-scope release; see CHANGELOG.md#v120 for the evidence and migration summary.
 - downstream_review_required:
-  - README.md
-  - ONBOARDING.md
   - CHANGELOG.md
-  - harness/capability-matrix.md
-  - harness/claude-code/README.md
-  - harness/codex/README.md
-  - harness/cursor/README.md
-  - harness/ci/README.md
-  - harness/claude-code/hooks-cookbook.md
-  - harness/claude-code/skills/phase-status/SKILL.md
-  - validate.py
-  - tools/bootstrap.sh
 -->
 ---
 id: playbooks/principles-conditional
 title: Cross-Phase Principles — Conditional Supplements (Tier 2)
-version: 1.1.0
+version: 1.2.0
 last_reviewed: 2026-04-25
 applies_to:
   - phase: all
@@ -49,7 +38,7 @@ This file contains the portions of aegis's cross-phase doctrine that apply only 
 
 **Overflow handling.** When exceeded, the amendment that caused overflow MUST be re-evaluated at the next Amendment Protocol pass in `principles-gates.md`. The author MUST propose one of: (a) split to a load-on-demand playbook, (b) prose compression without losing rule semantics, or (c) narrativization — move explanation to CHANGELOG rationale and drop the playbook prose. **Persistent overflow** — two consecutive release measurements over cap — promotes this SHOULD to `MUST-address-in-next-release`, either via further reduction or via load-on-demand restructure; the next release MUST NOT ship while still over cap without an explicit user-approved deferral recorded in `gaps.md` as a `deviation` gap with expiry condition.
 
-The 12,000 token target comes from cross-framework convergence (Cursor `.mdc` always-apply under ~2,000 tokens; Copilot `copilot-instructions.md` measurable degradation past ~1,000 lines; Aider `CONVENTIONS.md` community ≤ 150 lines; spec-kit token-tax warning; Anthropic Claude Code context-degradation guidance).
+The 12,000 token target comes from cross-framework convergence (Copilot `copilot-instructions.md` measurable degradation past ~1,000 lines; Aider `CONVENTIONS.md` community ≤ 150 lines; spec-kit token-tax warning; Anthropic Claude Code context-degradation guidance).
 
 ## Multi-Agent Coordination
 

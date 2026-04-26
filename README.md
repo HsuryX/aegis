@@ -1,6 +1,6 @@
 # aegis
 
-A governance framework for AI-assisted software development. Guides AI agents through a structured, quality-gated workflow from analysis to implementation — portable across Claude Code, Codex, Cursor, and any agent that reads `AGENTS.md`.
+A governance framework for AI-assisted software development. Guides AI agents through a structured, quality-gated workflow from analysis to implementation. Official harness adapters currently prioritize Claude Code and Codex; other agents may still consume `AGENTS.md` manually but do not receive special adapter support.
 
 ## The Problem
 
@@ -41,8 +41,8 @@ LICENSE
 .gitignore
 README.md                            # This file — human onboarding
 ONBOARDING.md                        # Companion primer after AGENTS-first startup
-validate.py                          # Mechanical validator (17 checks; see module docstring)
-playbooks/                           # Canonical doctrine and phase playbooks (read-only for the agent)
+validate.py                          # Mechanical validator (see module docstring for current checks)
+playbooks/                           # Canonical doctrine and phase playbooks (default read-only; amended only in Framework Maintenance Mode)
   principles.md                      # Always-load cross-phase doctrine
   principles-gates.md                # Gate/amendment-scoped rigor + SYNC-IMPACT + gate outcomes
   principles-conditional.md          # Triggered context-budget / coordination / handoff / spirit=letter rules
@@ -65,7 +65,7 @@ playbooks/                           # Canonical doctrine and phase playbooks (r
   gaps.md                            # Gap tracker (canonical gap entries with severity, lifecycle, type, and resolution fields)
   audit.md                           # Audit register with surface verdicts
   lessons.md                         # Consolidated lessons + cross-project amendment candidates
-harness/                             # Agent-specific adapters (the 5% that varies per agent)
+harness/                             # Prioritized agent adapters + shared verification backstops
   claude-code/                       # Claude Code harness (hooks, permissions, skills)
     settings.json                    # Permissions (deny rules) and hook wiring
     hooks-cookbook.md                # Claude-Code-specific hook/permission/LSP/MCP/skill reference
@@ -76,18 +76,15 @@ harness/                             # Agent-specific adapters (the 5% that vari
       audit-surface/SKILL.md         # /audit-surface — new audit surface entry
       phase-status/SKILL.md          # /phase-status — current state + gate status
     README.md                        # What Claude Code enforces natively + limitations
-  codex/                             # Codex CLI harness (reads AGENTS.md natively)
+  codex/                             # Codex CLI harness (reads AGENTS.md natively; templates inactive until installed)
     config.toml.example              # Optional Codex config starting point
-    README.md                        # What Codex enforces + compensation strategies
-  cursor/                            # Cursor harness (.cursor/rules/*.mdc)
-    .cursor/rules/                   # MDC rule files — thin pointers to playbooks/
-      principles.mdc                 # Cross-phase rules (alwaysApply)
-      standards.mdc                  # Quality standards (alwaysApply)
-      phase-0.mdc                    # Phase 0 rules (attach/reference when in Phase 0)
-      phase-1.mdc                    # Phase 1 rules (attach/reference when in Phase 1)
-      phase-2.mdc                    # Phase 2 rules (attach/reference when in Phase 2)
-      phase-3.mdc                    # Phase 3 rules (attach/reference when in Phase 3)
-    README.md                        # What Cursor enforces + compensation strategies
+    .codex/
+      hooks.json                     # Example Codex hook wiring
+      rules/                         # Optional Codex command-approval rules
+      hooks/                         # Hook templates: session start, protected-file guard, stop validation
+      agents/                        # Codex custom subagent templates
+    .agents/skills/                  # Codex repository skill templates
+    README.md                        # What Codex supports + activation limits
   ci/                                # Agent-neutral CI templates
     github-actions-aegis-verify.yml.example  # Reusable GitHub Actions workflow (Verification Sequence)
     README.md                        # How to adopt per CI platform
@@ -99,7 +96,7 @@ tools/
 
 > **Note.** Agent-local configuration at `.claude/settings.local.json` is per-project and not shipped with the framework.
 
-**Playbooks** are read-only for the agent. **Project-state ledgers** are the agent's working documents.
+**Playbooks** are read-only for governed-project agents by default. Framework maintainers amend them only through `AGENTS.md` Framework Maintenance Mode and `playbooks/principles-gates.md` Amendment Protocol. **Project-state ledgers** are the agent's working documents.
 
 ## Adoption
 
@@ -118,7 +115,7 @@ After bootstrap, follow this AGENTS-first startup order:
 2. Read `AGENTS.md` first; use `ONBOARDING.md` as companion setup context
 3. Begin Phase 0 audit per `playbooks/00-audit.md`
 
-During Phase 1 (when the toolchain is decided), configure hooks in the real loaded Claude settings path using `harness/claude-code/settings.json` as the shipped source — see `harness/claude-code/hooks-cookbook.md` Settings Template; replace `<formatter>`, `<linter>`, `<build-command>` with your tools. Optionally configure `.mcp.json` for documentation and search MCP servers. Codex and Cursor users follow the setup checklists in `harness/codex/README.md` and `harness/cursor/README.md`.
+During Phase 1 (when the toolchain is decided), configure hooks in the real loaded Claude settings path using `harness/claude-code/settings.json` as the shipped source — see `harness/claude-code/hooks-cookbook.md` Settings Template; replace `<formatter>`, `<linter>`, `<build-command>` with your tools. Optionally configure `.mcp.json` for documentation and search MCP servers. Codex users copy/sync `harness/codex/.codex/` into the active Codex project configuration before counting any hook, skill, rule, or subagent template as installed. No other agent-specific adapter is shipped.
 
 ### New Project (manual install)
 
@@ -138,7 +135,7 @@ Copying aegis into a pre-existing codebase can conflict with files that already 
 - **`AGENTS.md` or `CLAUDE.md` collision** — keep the existing file as `AGENTS.local.md` and adopt aegis's as canonical. Record a `framework` gap to reconcile any project-specific rules from the local file into aegis's Amendment Protocol in `playbooks/principles-gates.md`.
 - **`CHANGELOG.md` collision** — keep the target project's CHANGELOG. Prepend aegis's Versioning Policy section at the top if the target doesn't already cover semver.
 - **`.agent-state/` collision (non-template contents)** — archive to `.agent-state/pre-aegis-archive/` before overwriting. Start Phase 0 with fresh templates; reference the archive for historical context only.
-- **`harness/` collision** — if the target has a different `harness/` (e.g., a build harness), rename it to `harness.project/` and let aegis use `harness/claude-code/`, `harness/codex/`, `harness/cursor/`. If the target has an aegis-shaped harness already, diff `hooks-cookbook.md` and merge.
+- **`harness/` collision** — if the target has a different `harness/` (e.g., a build harness), rename it to `harness.project/` and let aegis use `harness/claude-code/`, `harness/codex/`, and `harness/ci/`. If the target has an aegis-shaped harness already, diff the prioritized harness READMEs and merge.
 - **`playbooks/` collision** — always overwrite with aegis's canonical set. Project-specific playbooks MAY live in a separate `playbooks/local/` directory that aegis does not touch.
 - **`validate.py` collision** — always overwrite with aegis's canonical version (the validator is part of the framework contract).
 - **`.gitignore` collision** — merge entries; aegis's additions are non-conflicting patterns.
@@ -176,7 +173,7 @@ Design decisions are numbered D-1 through D-12 (defined in `playbooks/01-design.
 | Coverage targets | `playbooks/standards.md` | Override via test strategy decision (D-10) |
 | Additional design decisions | `playbooks/01-design.md` | Add as D-13+ |
 | MCP servers | `.mcp.json` | Add documentation lookup, search, registry tools |
-| Project skills | `harness/claude-code/skills/` | Ship `/verify`, `/decision`, `/gap`, `/audit-surface`, `/phase-status` (five baseline skills) |
+| Project skills | `harness/claude-code/skills/`, `harness/codex/.agents/skills/` | Ship the five baseline workflows: `verify`, `decision`, `gap`, `audit-surface`, `phase-status` |
 
 ## Key Principles
 
@@ -195,9 +192,8 @@ This README is for humans browsing the repository. `AGENTS.md` is the operationa
 Any coding agent that reads agent instruction files can consume this framework:
 
 - **Claude Code** reads `CLAUDE.md` (which is the symlink) and bootstraps via the Session Start Protocol
-- **Codex and other AGENTS.md-aware agents** read `AGENTS.md` directly
-- **Cursor** ships rule templates under `harness/cursor/.cursor/rules/`; adopters must copy them to repo-root `.cursor/rules/` to activate them, and even then the rules remain advisory rather than hard-blocking
-- **Other agents** can read `AGENTS.md` manually or via a lightweight adapter
+- **Codex** reads `AGENTS.md` directly and can optionally use the shipped `.codex/` rule, hook, skill, and custom-subagent templates after they are installed in the real Codex-loaded configuration
+- **Other agents** can read `AGENTS.md` manually or via project-local adapters, but aegis does not ship or maintain special adapters for them
 
 Do not duplicate framework content between this README and `AGENTS.md` — this README points to `AGENTS.md` as the source of truth.
 

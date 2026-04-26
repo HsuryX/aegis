@@ -1,0 +1,29 @@
+# Optional Codex command-approval starter for aegis adopters.
+#
+# Keep this file small. Governance truth belongs in AGENTS.md and playbooks/.
+# Hooks, OS permissions, git hooks, and CI remain the right controls for
+# protected framework-file writes.
+
+# Validator commands are safe and expected at every gate/release.
+prefix_rule(
+    pattern=["python3", "validate.py"],
+    decision="allow",
+    justification="aegis validator is the standard local mechanical check",
+)
+prefix_rule(
+    pattern=["python3", "validate.py", "--product-ship"],
+    decision="allow",
+    justification="aegis product-ship validation mode is a standard release check",
+)
+
+# Destructive or broad permission changes should remain human-reviewed.
+prefix_rule(
+    pattern=["rm", "-rf"],
+    decision="prompt",
+    justification="recursive deletion can destroy project state or framework files",
+)
+prefix_rule(
+    pattern=["chmod", "-R"],
+    decision="prompt",
+    justification="recursive permission changes can disable or bypass governance backstops",
+)

@@ -87,6 +87,146 @@ Downstream projects that have adopted a yanked version SHOULD upgrade to the sup
 
 No unreleased changes.
 
+<a id="v120"></a>
+## [v1.2.0] — 2026-04-25
+
+Framework self-review release. This release tightens aegis as a governance
+framework and as a framework that can safely govern its own maintenance:
+`AGENTS.md` now has an explicit Framework Maintenance Mode, SYNC-IMPACT comments
+are compact routing metadata instead of repeated release essays, Codex is
+updated from advisory-only documentation to first-class shipped-but-inactive
+templates, Cursor-specific adapter support is removed from the current support
+surface, and `validate.py` gains guardrails against instruction-budget bloat and
+stale harness capability claims. Phase model, verdict vocabulary, lifecycle
+modes, gap taxonomy, gate outcome vocabulary, and agent-neutral governance
+semantics are unchanged. SemVer MINOR — this release expands shipped Codex
+support and refines the prioritized harness/support-scope guidance while
+removing previously shipped Cursor adapter templates from the upstream-managed
+copy. Downstream projects using those templates must retain their local copy or
+migrate to Claude Code, Codex, or agent-neutral manual/CI backstops.
+
+### Added
+
+- `AGENTS.md` Framework Maintenance Mode: framework files remain read-only for
+  governed-project work, but explicitly authorized aegis maintenance may edit
+  `AGENTS.md` and `playbooks/` through the Amendment Protocol. For the aegis
+  repo itself, `.agent-state/` remains an adopter-facing clean template when the
+  user requests a clean release state; finite amendment evidence may live in
+  this CHANGELOG and final verification artifacts instead of active ledgers.
+- `AGENTS.md` operator-kernel budget: `AGENTS.md` must stay under 32 KiB unless
+  every shipped harness that reads it is explicitly configured and documented for
+  a larger budget.
+- First-class Codex shipped templates under `harness/codex/`: `.codex` command
+  rules/hooks/subagents plus `.agents/skills` workflow skills.
+- `validate.py` checks for `AGENTS.md` size budget, compact SYNC-IMPACT shape,
+  and stale Codex harness claims such as retired "no hooks / no skills" text.
+
+### Changed
+
+- SYNC-IMPACT comments in `AGENTS.md` and `playbooks/*.md` now carry compact
+  routing metadata that points to this CHANGELOG for release narrative and
+  migration details. This removes duplicated top-of-file prose from every
+  framework file while preserving downstream re-read signaling.
+- `playbooks/principles-gates.md` Amendment Protocol now supports the
+  clean-template framework release exception: when explicitly requested,
+  framework-maintenance evidence may be recorded in the changelog instead of
+  leaving active `.agent-state/` diffs in the distributed template.
+- `harness/capability-matrix.md` now treats Codex as supporting `AGENTS.md`,
+  rules, hooks, skills, subagents, config, sandboxing, and approval policies,
+  while still classifying shipped aegis Codex templates as inactive until
+  installed and tested.
+- README and onboarding guidance now distinguish governed-project read-only
+  rules from explicitly authorized framework maintenance, and list only Claude
+  Code and Codex as prioritized agent adapters.
+
+### Removed
+
+- Long duplicated v1.1.0 SYNC-IMPACT release narratives from every canonical
+  framework file header.
+- Cursor-specific shipped adapter templates under `harness/cursor/`, including
+  the former `.cursor/rules/*.mdc` playbook pointers and Cursor harness README.
+- Stale Codex README assertions that Codex lacks hook, skill, or SessionStart
+  surfaces.
+
+### Fixed
+
+- Harness documentation no longer implies active enforcement from files merely
+  existing under `harness/`.
+- The framework-maintenance path no longer conflicts with the default
+  governed-project rule that `AGENTS.md` and `playbooks/` are read-only.
+
+### Migration Notes
+
+- Downstream projects should re-copy `AGENTS.md`, `playbooks/`,
+  `harness/capability-matrix.md`, `harness/codex/`, `README.md`,
+  `ONBOARDING.md`, `validate.py`, and `tools/bootstrap.sh`, and remove
+  upstream-managed `harness/cursor/` from the official aegis copy.
+- Downstream projects that rely on the former `harness/cursor/` templates should
+  keep their existing local copy as project-owned adapter code or migrate to the
+  prioritized Claude Code / Codex harnesses. aegis no longer ships or updates
+  Cursor-specific templates.
+- Projects relying on the old Codex README as proof that Codex had no hook or
+  skill surfaces should replace that local guidance and reclassify any Codex
+  controls using the control-class / activation-state model in
+  `harness/capability-matrix.md`.
+- Projects that parse SYNC-IMPACT comments should preserve the same required
+  fields but expect compact comments; full release detail now lives in this
+  CHANGELOG entry.
+
+### Framework Maintenance Evidence
+
+- Release authority: maintainer-approved v1.2.0 framework-maintenance amendment
+  under the Amendment Protocol, with clean-template final state and first-class
+  Codex shipped-but-inactive support as release criteria.
+- SemVer classification: MINOR. Changed canonical framework files:
+  `AGENTS.md` and `playbooks/*.md`; changed derived/supporting files:
+  `CHANGELOG.md`, `README.md`, `ONBOARDING.md`, `harness/capability-matrix.md`,
+  `harness/codex/`, removed `harness/cursor/`, `tools/bootstrap.sh`, and
+  `validate.py`.
+- Derived-document sweep: README, onboarding, harness capability matrix, Codex
+  README/config/templates, official Codex skill-path correction, and bootstrap
+  next steps updated for the new framework-maintenance, Codex capability, and
+  Claude+Codex-only priority model.
+- Review method and disposition: performed a diff-scoped review from
+  structural, semantic, adversarial-compliance, downstream-adopter, and harness
+  capability perspectives. Findings addressed before final verification:
+  corrected Codex skill discovery to `.agents/skills`, command rules to
+  `.rules`, SessionStart matcher coverage to `startup|resume|clear`, anchored
+  the PreToolUse matcher to exact edit tools, and aligned the Stop hook failure
+  path with Codex blocking semantics; tightened the Codex protected-file
+  hook so framework-maintenance bypass requires a maintainer-set environment
+  override instead of words inside the pending tool payload; added the Codex
+  project-trust precondition for project-local `.codex` templates; removed an
+  overclaim that Codex session-start templates could reject incomplete startup;
+  removed Cursor-specific adapter templates and current-doc setup paths;
+  corrected product-ship skip-number references after validator check
+  renumbering;
+  and clarified the clean-template exception so semantic-review evidence is
+  summarized in this CHANGELOG rather than in active adopter-facing ledgers.
+  Review evidence is summarized in this entry rather than a separate release
+  artifact.
+- Verification evidence:
+  - `python3 validate.py` — pass; all checks passed for `AGENTS.md` + 16 playbooks, version 1.2.0.
+  - `python3 validate.py --product-ship` — pass; product-ship checks passed, skipped amendment-lane-only checks 17-18.
+  - `python3 -m py_compile validate.py harness/codex/.codex/hooks/*.py` — pass.
+  - `python3 -m json.tool harness/codex/.codex/hooks.json` — pass.
+  - `bash -n tools/bootstrap.sh` — pass.
+  - Codex hook smoke tests — pass: SessionStart emits valid hook JSON;
+    PreToolUse blocks protected `AGENTS.md` edits even when the pending patch
+    contains framework-maintenance wording; `AEGIS_FRAMEWORK_MAINTENANCE=1`
+    allows the protected edit path; ordinary `README.md` edits pass; non-edit
+    tools are skipped exactly; Stop leaves stdout empty on validation success;
+    and Stop returns blocking exit code 2 with stderr details on validation
+    failure.
+  - Codex template shape checks — pass for subagent TOML required fields,
+    `.agents/skills/*/SKILL.md` shape, and `.codex/rules/*.rules` starter
+    command rules.
+  - Markdown relative link / anchor scan — pass; 61 local links / anchors checked.
+  - `git diff --check` — pass.
+  - Stale Codex claim scan over README, onboarding, Codex harness, and capability matrix — no matches.
+  - `wc -c AGENTS.md` — `18734 AGENTS.md`, below the 32 KiB budget.
+- Clean-template confirmation: `git diff -- .agent-state` returned no diff.
+
 ## [v1.1.0] — 2026-04-25
 
 Framework refinement release. Adds new capabilities (bounded-change 0 → 3 path, harness security-claim model, Canonical Dependency Edges DAG, Per-phase timing-hooks table for the Adversarial Review Protocol, `phase regression` glossary entry, and the `validate.py check_traceability` rollup metric), extends existing rules (archive-decay re-evaluation under Required Behaviors #7, a concrete protocol for the Cold Read perspective, a date-only UTC variant of the scope-reduction sign-off format for `micro`/`small` projects), removes redundancies (per-phase `## Adversarial Gate Check` stanzas, duplicate Verdict Discipline definition in the glossary, redundant placeholder grep in 02-spec.md Quality Checks, no-longer-needed validator anchor-diversity check), and clarifies several `AGENTS.md` sections (Phase Gates, Implementation Boundary, Workspace Discipline, Session Start Protocol Step 3). Phase model, scope tiers, lifecycle modes, gate-outcome vocabulary, verdict discipline, and the four phases themselves are unchanged. SemVer MINOR — additive and refinement; no rule becomes stricter than v1.0.0 in a way that invalidates prior compliance.

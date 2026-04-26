@@ -94,7 +94,7 @@ playbooks/00-audit.md ─► 01-design.md ─► 02-spec.md ─► 03-implement.
 ## When stuck
 
 - Terminology ambiguous → `playbooks/glossary.md`
-- A framework rule feels wrong → use the Amendment Protocol in `playbooks/principles-gates.md`. Do NOT self-authorize a deviation; propose the amendment to the user.
+- A framework rule feels wrong → use the Amendment Protocol in `playbooks/principles-gates.md`. In the aegis framework repo itself, explicit maintainer work uses `AGENTS.md` Framework Maintenance Mode; in governed downstream projects, do NOT self-authorize a rule change as a local shortcut.
 - Gate evaluation or failure handling → `playbooks/principles-gates.md` Gate Outcome Vocabulary; report the actual gate outcome as `Go`, `Conditional Go`, `Hold`, `Recycle`, or `Kill` with specific evidence, and report task/session status separately as `DONE`, `DONE_WITH_CONCERNS`, `BLOCKED`, or `NEEDS_CONTEXT` per `playbooks/principles.md`
 - Scope feels too large for one session → `AGENTS.md` Session Start Protocol step 8; propose session sequencing to the user
 - Multiple concerns collide in one session → same as above; the defense against the `kitchen-sink-session` failure pattern
@@ -112,8 +112,8 @@ This section summarizes the read/write split; `AGENTS.md`, D-2, D-11, and D-12 r
 
 aegis ships as two kinds of files:
 
-- **Framework rules** — `AGENTS.md`, `CLAUDE.md` symlink, and everything under `playbooks/`. Read-only from the agent's perspective. Changes flow through the Amendment Protocol in `playbooks/principles-gates.md`.
-- **Maintainer-controlled Claude Code harness surfaces** — `harness/claude-code/settings.json` and `harness/claude-code/skills/` are the canonical shipped source/template locations and MAY be configured by the human maintainer during setup. `settings.json` is not active from file presence alone; it becomes active only when synced into Claude Code's real loaded settings path.
+- **Framework rules** — `AGENTS.md`, `CLAUDE.md` symlink, and everything under `playbooks/`. Read-only from governed-project agents by default. Framework maintainers change them only through Framework Maintenance Mode and the Amendment Protocol in `playbooks/principles-gates.md`.
+- **Maintainer-controlled harness surfaces** — `harness/claude-code/settings.json`, `harness/claude-code/skills/`, `harness/codex/.codex/`, and `harness/codex/.agents/skills/` are shipped source/template locations and MAY be configured by the human maintainer during setup. They are not active from file presence alone; they become active only when synced into each tool's real loaded configuration.
 - **Project state** — everything under `.agent-state/`. The agent reads and writes these every session. They record your project's audit findings, decisions, gaps, lessons, and session log.
 
-When you copy aegis into your project, `.agent-state/` becomes YOUR project's working memory; `AGENTS.md` and `playbooks/` remain aegis's rules, while the shipped Claude Code settings/skills surfaces stay maintainer-controlled setup artifacts. Temporary framework-rule exceptions are recorded in your `.agent-state/gaps.md` with type `deviation`; proposed framework-rule changes use type `framework` — neither propagates back to aegis unless you file it upstream.
+When you copy aegis into your project, `.agent-state/` becomes YOUR project's working memory; `AGENTS.md` and `playbooks/` remain aegis's rules, while shipped harness templates stay maintainer-controlled setup artifacts. Temporary framework-rule exceptions are recorded in your `.agent-state/gaps.md` with type `deviation`; proposed framework-rule changes use type `framework` — neither propagates back to aegis unless you file it upstream.

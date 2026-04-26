@@ -1,27 +1,16 @@
 <!--
 SYNC-IMPACT
-- version: 1.0.0 → 1.1.0
+- version: 1.1.0 → 1.2.0
 - bump: MINOR
 - date: 2026-04-25
-- rationale: Framework refinement release. Adds the bounded-change 0 -> 3 path for already-governed work (`00-audit.md`); the harness security-claim model with explicit control-class (`Executable` / `Backstop` / `Advisory`) and activation-state (`Active now` / `Shipped but inactive` / `Not available here`) classification (`harness/capability-matrix.md`); the Canonical Dependency Edges DAG seeding the Whole-System Composition Check (`01-design.md`); the Adversarial Review Protocol Per-phase timing-hooks table (`principles-gates.md`); the Scope-Proportional gate-protocol mini-matrix (`principles-gates.md` Scope-Proportional Ceremony); the `phase regression` glossary entry; and `validate.py check_traceability` — a file-level `Implements:`/`Covers:` rollup (warning-only, vacuous on the framework repo itself). Extends Required Behaviors #7 with an archive-decay re-evaluation rule for consulted archive entries >= 12 months old (`principles.md`). Expands the existing Cold Read perspective with a concrete protocol (`principles-gates.md`). Adds a date-only UTC variant to the scope-reduction sign-off format for `micro`/`small` projects (`00-audit.md` ceremony matrix + `release-readiness.md` checklist); the full git-email anchored form remains for `standard`/`large`. Relaxes Session Start Protocol Step 3 — the integrity block now accepts any form that cites countable or tool-checkable evidence; the prior templated form is preserved as a reference example. Promotes the implementation-boundary rule to a dedicated `## Implementation Boundary` section in `AGENTS.md` (v1.0.0 carried the rule as a paragraph below the Phase Gates table); the new section's bounded-change summary paragraph points at `00-audit.md` for the full Bounded-Change Rule; surfaces additional Phase 1 gate items (Authority model, Whole-System Composition Check, threat-model applicability) and Phase 2 Proof-class declaration in the `AGENTS.md` Phase Gates table; decouples the Phase 1 threat-model gate from `specs/threat-model.md` artifact-existence (binds to whichever path D-5 declares); reformats the `AGENTS.md` Workspace Discipline second paragraph from a single run-on into a 6-bullet list (preserving v1.0.0 content and adding a Bash-subprocess-gap caveat); trims the scope-reduction marker phrase list (`validate.py` `_DEFERRAL_PHRASES`, mirrored in `standards.md` / `03-implement.md` / `harness/cursor/.cursor/rules/phase-3.mdc`) to unambiguous multi-word forms only, dropping false-positive-prone tokens. De-duplicates the Verdict Discipline definition (`AGENTS.md` is sole canonical owner; glossary holds a one-paragraph redirect); removes the four per-phase `## Adversarial Gate Check` stanzas (replaced by the new Per-phase timing-hooks table); removes the redundant placeholder grep at `02-spec.md` Quality Checks (the Phase Gate scan is a strict superset). Compresses Codex and Cursor harness READMEs by deferring universal-backstop guidance to `harness/capability-matrix.md`. Required Behaviors #8 grep formula relocates from `principles.md` body to `automation.md` Lessons-Gap Backstop. Removes the `validate.py` Verification Coverage Matrix anchor-diversity check; its enforcement contract is already covered by check 7 (evidence verifiability). SemVer MINOR — additive and refinement; no rule becomes stricter than v1.0.0 in a way that invalidates prior compliance.
+- rationale: Framework support-scope release; see CHANGELOG.md#v120 for the evidence and migration summary.
 - downstream_review_required:
-  - README.md
-  - ONBOARDING.md
   - CHANGELOG.md
-  - harness/capability-matrix.md
-  - harness/claude-code/README.md
-  - harness/codex/README.md
-  - harness/cursor/README.md
-  - harness/ci/README.md
-  - harness/claude-code/hooks-cookbook.md
-  - harness/claude-code/skills/phase-status/SKILL.md
-  - validate.py
-  - tools/bootstrap.sh
 -->
 ---
 id: playbooks/03-implement
 title: Phase 3: Implementation
-version: 1.1.0
+version: 1.2.0
 last_reviewed: 2026-04-25
 applies_to:
   - phase: 3-implement
@@ -275,7 +264,7 @@ Apply the shared gate procedure from `AGENTS.md` Phase Gates and `principles-gat
 
 After all Phase 3 Completion Criteria pass and before Post-Completion Housekeeping, the agent MUST produce the four DMAIC Control outputs. Their purpose is to ensure that the completed implementation **stays correct** after the agent ends the session — drift caught at the gate is cheap; drift caught months later is expensive.
 
-1. **Mistake-proofing hooks** — for every rule the agent discovered during implementation that is mechanically checkable (greppable, exit-code-verifiable, pattern-matchable) and was being enforced only by discipline, the agent MUST propose a hook in the relevant harness (`harness/claude-code/hooks-cookbook.md` for the Claude Code harness; equivalent in other harnesses) or a CI gate. Proposals are recorded in the session log; adoption is subject to the Amendment Protocol in `principles-gates.md` if the rule lives in a playbook.
+1. **Mistake-proofing hooks** — for every rule the agent discovered during implementation that is mechanically checkable (greppable, exit-code-verifiable, pattern-matchable) and was being enforced only by discipline, the agent MUST propose a hook in the relevant prioritized harness (`harness/claude-code/hooks-cookbook.md` for Claude Code, `harness/codex/.codex/hooks/` for Codex) or a CI gate. For any non-prioritized agent, record the proposal as adopter-owned local wiring, not framework-shipped support. Proposals are recorded in the session log; adoption is subject to the Amendment Protocol in `principles-gates.md` if the rule lives in a playbook.
 2. **Standard Operating Procedures (SOPs)** — for every recurring operational task surfaced during implementation (database migration rollout, secret rotation, deployment promotion, incident triage), the agent MUST either cite the existing procedure in the repository or draft a new procedure. Procedures live under `docs/` or `playbooks/` per D-12 (Documentation structure). An operation performed once without a procedure is acceptable; twice without a procedure is a `failure-pattern` gap.
 3. **Reaction plans** — for each known failure mode of the implemented system (per the spec's error semantics and any open `gaps.md` entries with live trigger or expiry conditions), the agent MUST record the detection signal, the responder (human or automated), the first mitigation step, and the escalation path. Reaction plans live alongside the SOPs. A failure mode without a reaction plan is a gap of type `analysis` — the implementation is not yet production-complete.
 4. **Guardrails** — for every runtime invariant that MUST hold but is not verified by tests (rate limits, quotas, circuit breakers, resource caps, concurrency limits), the agent MUST record the invariant, where it is enforced, and how to verify it is still enforced after future changes. Guardrails that depend on external configuration (cloud IAM, feature flags, environment variables) MUST cite the canonical source of truth.

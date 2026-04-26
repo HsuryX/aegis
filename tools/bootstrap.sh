@@ -323,6 +323,7 @@ if (cd "$TARGET" && python3 validate.py); then
   echo "  1. cd $TARGET"
   echo "  2. read AGENTS.md first, then ONBOARDING.md as companion context"
   echo "  3. begin Phase 0 audit per playbooks/00-audit.md"
+  echo "  4. install the chosen harness templates from harness/<tool>/ before relying on hooks or rules"
   echo
   if [[ -f "$SCRIPT_DIR/ONBOARDING.md" ]]; then
     echo "  (ONBOARDING.md copied to target.)"

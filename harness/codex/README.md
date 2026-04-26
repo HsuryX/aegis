@@ -1,49 +1,97 @@
 # Codex CLI harness
 
-This directory contains Codex-CLI-specific guidance for aegis. Read it together with the shared [`../capability-matrix.md`](../capability-matrix.md), which is the authoritative summary of what is active now vs optional or manual.
+This directory contains Codex-specific templates for aegis. Read it together
+with [`../capability-matrix.md`](../capability-matrix.md), which is the
+authoritative active-vs-shipped capability table.
 
 ## What this repo wires now
 
-This repo does **not** currently wire a Codex-side blocking control. What ships today is:
+Nothing under `harness/codex/` is active from file presence alone. The shipped
+state is **shipped but inactive**:
 
-- `AGENTS.md` / playbook guidance that Codex can read
-- `config.toml.example` as an optional starter
-- documentation for manual, OS-level, git-hook, and CI backstops
+- `config.toml.example` — optional starter configuration.
+- `.codex/hooks.json` — example hook wiring.
+- `.codex/rules/aegis.rules` — optional Codex command-approval starter.
+- `.codex/hooks/` — hook script templates for session-start reminders,
+  protected-file checks, and stop-time validation.
+- `.agents/skills/` — Codex repository skill templates mirroring the baseline aegis
+  workflows.
+- `.codex/agents/` — a read-only adversarial-reviewer subagent template.
 
-Treat Codex in this repo as **manual discipline first**, with optional sandbox / approval / OS / CI hardening added by the adopter.
+An adopter must copy or sync these templates into the real Codex-loaded
+configuration locations and verify they fire before counting them as controls.
 
-## What Codex enforces natively
+## What Codex can support
 
-- **AGENTS.md reading.** Codex CLI follows the AGENTS.md convention and loads `AGENTS.md` at session start. The agent sees the thin operator kernel (Session Start Protocol, load map, phase boundaries, workspace discipline) and uses it to pull in the current playbooks.
-- **Project-scoped configuration** via `config.toml` (optional — see `config.toml.example`). Codex supports per-project profile selection, model choice, approval policies, and sandbox modes.
-- **Approval policies.** Codex can require user approval before running commands or writing files, depending on the configured policy.
-- **Workspace sandboxing.** Codex can restrict file writes to the project directory via sandbox modes.
+- **AGENTS.md reading.** Codex reads `AGENTS.md`; aegis uses it as the thin
+  operator kernel and load map.
+- **Rules.** Codex command-approval rules can `allow`, `prompt`, or mark
+  command prefixes as `forbidden`. They are command policy, not a replacement
+  for aegis prose rules.
+- **Hooks.** Codex hooks can run executable checks around events such as session
+  start, tool use, and stop/completion when installed in the active config.
+- **Skills.** Codex skills can package repeatable workflows with `SKILL.md`
+  instructions.
+- **Custom subagents.** Codex agent TOML files can provide bounded read-only
+  reviewers or other specialist roles.
+- **Configuration, sandboxing, and approval policy.** Codex project/user config
+  can set model, approval, and sandbox defaults.
 
-## What Codex cannot enforce
+## What remains outside native Codex guarantees
 
-- **No hook equivalent.** Codex has no PreToolUse/PostToolUse mechanism comparable to Claude Code. The agent is responsible for self-regulating against the rules in `AGENTS.md` and the playbooks.
-- **No deny rules for individual files.** Codex does not block file writes based on pattern deny lists. Write protection for `AGENTS.md`, `CLAUDE.md`, `playbooks/`, and `_legacy/` is agent-self-discipline plus OS-level `chmod`.
-- **No skill commands.** Codex does not have the Claude Code `/{name}` skill mechanism. The framework skills (`/verify`, `/decision`, `/gap`, `/audit-surface`, `/phase-status`) are documented as behaviors the agent SHOULD invoke manually, not as tool commands.
-- **No SessionStart hook.** The agent MUST self-execute the Session Start Protocol from `AGENTS.md` at the beginning of every session. This is a rule of discipline, not a tool-enforced constraint.
-- **No PreCompact hook.** When context compression runs, the agent MUST flush unsaved state to files manually — there is no automatic reminder.
-
-## How to compensate
-
-Universal backstops (OS `chmod`, git pre-commit hooks, CI workflow, manual Session Start Protocol, manual `python3 validate.py`) are documented once in [`../capability-matrix.md`](../capability-matrix.md) — see the Controls table and Notes. Apply them to compensate for Codex's missing native enforcement.
+- **Inactive templates are not enforcement.** Files in this directory are
+  evidence of shipped support, not active controls.
+- **Per-file write denial is best-effort unless hooks are installed and tested.**
+  The shipped pre-tool hook template blocks obvious direct edit/write paths but
+  does not replace OS permissions, git hooks, or CI.
+- **Shell subprocess writes remain a gap.** A hook can inspect the requested
+  tool call, but shell-resistant protection still needs OS-level or CI backstops.
+- **Project build/test commands are project-owned.** The stop hook runs
+  `python3 validate.py`; downstream project build, lint, test, and security
+  commands must come from project decisions/specs.
 
 ## Files in this harness
 
-- `config.toml.example` — example Codex CLI project configuration with commented-out fields. Copy to your Codex config location and uncomment/adjust.
-- `README.md` — this file.
-
-## Minimum Codex CLI version
-
-aegis requires a Codex CLI build with AGENTS.md support. Earlier versions without AGENTS.md reading need a different harness.
+- `config.toml.example` — optional Codex config starting point.
+- `.codex/hooks.json` — example hook wiring for the scripts below.
+- `.codex/rules/aegis.rules` — optional command-approval starter.
+- `.codex/hooks/aegis_session_start.py` — non-mutating Session Start Protocol
+  reminder.
+- `.codex/hooks/aegis_pre_tool_use.py` — best-effort protected-file edit guard.
+- `.codex/hooks/aegis_stop_validate.py` — stop-time `python3 validate.py`
+  runner that returns Codex's blocking status on validation failure.
+- `.agents/skills/*/SKILL.md` — workflow templates: `phase-status`, `verify`,
+  `decision`, `gap`, and `audit-surface`.
+- `.codex/agents/aegis-adversarial-reviewer.toml` — read-only semantic reviewer
+  for framework amendments and gate claims.
 
 ## Setup checklist
 
 After copying aegis into the target repo:
 
-1. **Universal backstops** — apply OS `chmod`, install git pre-commit hooks (commit-msg conventional-commits regex + `Implements:` trailer; pre-commit `python3 validate.py`), and install the CI workflow template from [`harness/ci/`](../ci/README.md). Same as every harness — see [`../capability-matrix.md`](../capability-matrix.md) for the canonical control table.
-2. **Codex-specific: session-start discipline.** Codex has no SessionStart hook. Pin a "read `.agent-state/phase.md` first" reminder in the project's Codex prompt library or README so the agent self-executes the Session Start Protocol from `AGENTS.md`.
-3. **Codex-specific: `config.toml`.** Copy `config.toml.example` to the appropriate Codex config location if stricter defaults are wanted. Verify `AGENTS.md` reading is enabled; configure approval policy and sandboxing to match the repo's risk level. These are optional hardening controls, not repo-wired guarantees.
+1. Copy `harness/codex/.codex/` and `harness/codex/.agents/` into the active
+   Codex project configuration locations for that repo; keep one canonical local
+   copy of each template family to avoid drift.
+2. Mark the project as trusted in Codex config before relying on project-local
+   `.codex` hooks or rules.
+3. Ensure hook scripts are executable (`chmod +x .codex/hooks/*.py`).
+4. Enable Codex hooks in your config, adapt `.codex/hooks.json` if needed, and
+   run one known-failing protected-file write to prove the pre-tool guard fires;
+   if relying on Stop, also run a known-failing validation fixture to prove it
+   blocks completion.
+   For authorized framework maintenance, start Codex with
+   `AEGIS_FRAMEWORK_MAINTENANCE=1`; the hook does not trust words inside a
+   pending patch as authorization.
+5. Copy or adapt `config.toml.example` if stricter approval/sandbox defaults are
+   needed.
+6. Install universal backstops from [`../capability-matrix.md`](../capability-matrix.md):
+   OS permissions where appropriate, git hooks, CI, and manual `validate.py`
+   verification.
+
+## Minimum Codex capability
+
+aegis requires a Codex build that supports `AGENTS.md`. The optional templates
+in this harness assume Codex support for rules, hooks, skills, and custom
+subagents; if a local Codex build lacks one of those surfaces, treat the
+corresponding template as documentation only and rely on the universal
+backstops.

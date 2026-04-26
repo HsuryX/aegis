@@ -1,20 +1,40 @@
 # Codex CLI configuration example for aegis
 #
-# This file is intentionally left as commented-out placeholders. Copy it to
-# your Codex CLI configuration location (refer to the Codex CLI documentation
-# for the current path) and uncomment/adjust the fields you need.
+# This file is intentionally left as commented-out placeholders. Copy or adapt
+# it in the Codex configuration location for your project, mark the project as
+# trusted when using project-local `.codex/` surfaces, then wire the templates
+# under harness/codex/.codex/ in the real loaded Codex config.
 #
 # aegis does NOT require any specific Codex configuration to work —
 # Codex reads AGENTS.md natively at repo root. This file is provided only as
 # a starting point for users who want stricter defaults.
 
-# [profile.default]
+# [features]
+# codex_hooks = true
+
+# project_doc_max_bytes = 32768                  # default AGENTS.md budget; raise only with an explicit docs decision
+
+# [profiles.default]
 # model = "<your-preferred-model>"                # e.g., a current Codex-capable model ID
 # approval_policy = "on-request"                  # never | on-request | untrusted
-# sandbox = "workspace-write"                     # read-only | workspace-write | danger-full-access
-# instructions_file = "AGENTS.md"                 # explicit framework pointer
+# sandbox_mode = "workspace-write"                # read-only | workspace-write | danger-full-access
 
-# [profile.strict]
+# [profiles.strict]
 # # Stricter profile for sensitive or production repositories
 # approval_policy = "untrusted"
-# sandbox = "read-only"
+# sandbox_mode = "read-only"
+
+# [projects."/absolute/path/to/your/project"]
+# trust_level = "trusted"                         # required before project-local `.codex/` hooks/rules are trusted
+
+# Hook/rule/skill/subagent templates ship under:
+#   harness/codex/.codex/hooks.json
+#   harness/codex/.codex/rules/
+#   harness/codex/.codex/hooks/
+#   harness/codex/.codex/agents/
+#   harness/codex/.agents/skills/
+#
+# They are inactive until copied/synced into the real loaded Codex project
+# configuration, the project is trusted when using project-local `.codex/`
+# surfaces, and the setup is verified with a known-failing protected-file edit
+# plus `python3 validate.py`.

@@ -1,27 +1,16 @@
 <!--
 SYNC-IMPACT
-- version: 1.0.0 → 1.1.0
+- version: 1.1.0 → 1.2.0
 - bump: MINOR
 - date: 2026-04-25
-- rationale: Framework refinement release. Adds the bounded-change 0 -> 3 path for already-governed work (`00-audit.md`); the harness security-claim model with explicit control-class (`Executable` / `Backstop` / `Advisory`) and activation-state (`Active now` / `Shipped but inactive` / `Not available here`) classification (`harness/capability-matrix.md`); the Canonical Dependency Edges DAG seeding the Whole-System Composition Check (`01-design.md`); the Adversarial Review Protocol Per-phase timing-hooks table (`principles-gates.md`); the Scope-Proportional gate-protocol mini-matrix (`principles-gates.md` Scope-Proportional Ceremony); the `phase regression` glossary entry; and `validate.py check_traceability` — a file-level `Implements:`/`Covers:` rollup (warning-only, vacuous on the framework repo itself). Extends Required Behaviors #7 with an archive-decay re-evaluation rule for consulted archive entries >= 12 months old (`principles.md`). Expands the existing Cold Read perspective with a concrete protocol (`principles-gates.md`). Adds a date-only UTC variant to the scope-reduction sign-off format for `micro`/`small` projects (`00-audit.md` ceremony matrix + `release-readiness.md` checklist); the full git-email anchored form remains for `standard`/`large`. Relaxes Session Start Protocol Step 3 — the integrity block now accepts any form that cites countable or tool-checkable evidence; the prior templated form is preserved as a reference example. Promotes the implementation-boundary rule to a dedicated `## Implementation Boundary` section in `AGENTS.md` (v1.0.0 carried the rule as a paragraph below the Phase Gates table); the new section's bounded-change summary paragraph points at `00-audit.md` for the full Bounded-Change Rule; surfaces additional Phase 1 gate items (Authority model, Whole-System Composition Check, threat-model applicability) and Phase 2 Proof-class declaration in the `AGENTS.md` Phase Gates table; decouples the Phase 1 threat-model gate from `specs/threat-model.md` artifact-existence (binds to whichever path D-5 declares); reformats the `AGENTS.md` Workspace Discipline second paragraph from a single run-on into a 6-bullet list (preserving v1.0.0 content and adding a Bash-subprocess-gap caveat); trims the scope-reduction marker phrase list (`validate.py` `_DEFERRAL_PHRASES`, mirrored in `standards.md` / `03-implement.md` / `harness/cursor/.cursor/rules/phase-3.mdc`) to unambiguous multi-word forms only, dropping false-positive-prone tokens. De-duplicates the Verdict Discipline definition (`AGENTS.md` is sole canonical owner; glossary holds a one-paragraph redirect); removes the four per-phase `## Adversarial Gate Check` stanzas (replaced by the new Per-phase timing-hooks table); removes the redundant placeholder grep at `02-spec.md` Quality Checks (the Phase Gate scan is a strict superset). Compresses Codex and Cursor harness READMEs by deferring universal-backstop guidance to `harness/capability-matrix.md`. Required Behaviors #8 grep formula relocates from `principles.md` body to `automation.md` Lessons-Gap Backstop. Removes the `validate.py` Verification Coverage Matrix anchor-diversity check; its enforcement contract is already covered by check 7 (evidence verifiability). SemVer MINOR — additive and refinement; no rule becomes stricter than v1.0.0 in a way that invalidates prior compliance.
+- rationale: Framework support-scope release; see CHANGELOG.md#v120 for the evidence and migration summary.
 - downstream_review_required:
-  - README.md
-  - ONBOARDING.md
   - CHANGELOG.md
-  - harness/capability-matrix.md
-  - harness/claude-code/README.md
-  - harness/codex/README.md
-  - harness/cursor/README.md
-  - harness/ci/README.md
-  - harness/claude-code/hooks-cookbook.md
-  - harness/claude-code/skills/phase-status/SKILL.md
-  - validate.py
-  - tools/bootstrap.sh
 -->
 ---
 id: AGENTS
 title: aegis
-version: 1.1.0
+version: 1.2.0
 last_reviewed: 2026-04-25
 applies_to:
   - phase: all
@@ -51,7 +40,7 @@ supersedes: null
 
 *A governance framework for AI coding agents.*
 
-**Version:** aegis v1.1.0 · operational entrypoint per the AGENTS.md convention · `CLAUDE.md` at the repo root is a symlink to this file for Claude Code compatibility.
+**Version:** aegis v1.2.0 · operational entrypoint per the AGENTS.md convention · `CLAUDE.md` at the repo root is a symlink to this file for Claude Code compatibility.
 
 Normative language semantics, classification rubric, and the bad-faith-read test are defined in `playbooks/principles.md` Normative Language. RFC 2119 keywords appear in ALL CAPS throughout aegis.
 
@@ -88,6 +77,8 @@ Every session MUST begin with these steps, in order:
 - **Current phase** — exactly one of `playbooks/00-audit.md`, `01-design.md`, `02-spec.md`, `03-implement.md`, chosen from `phase.md`
 - **Code/spec quality bar** — `playbooks/standards.md` when code, tests, or technical specs are in scope
 - **Everything else** — consulted by reference from the active playbooks, not loaded by default
+
+`AGENTS.md` MUST remain an operator kernel, not a full manual. Its file size MUST stay under 32 KiB unless every shipped harness that reads `AGENTS.md` is explicitly configured to accept a larger project-instruction budget and the CHANGELOG migration notes name that requirement. Deeper doctrine belongs in `playbooks/`.
 
 ## Foundational Principle
 
@@ -138,15 +129,21 @@ The agent MUST NOT write implementation code before Phase 3. If uncertain, the a
 
 When new evidence invalidates prior phase work, the agent MUST: (1) update `phase.md` to the earlier phase, (2) re-read the corresponding playbook, (3) record the regression in the session log with what changed and why, and (4) re-run the earlier phase's gate before re-advancing. If regression from the same phase occurs more than twice, or if total regressions exceed three in a session, the agent MUST stop, report status BLOCKED, and wait for user direction. See `playbooks/glossary.md` *phase regression* for the term definition.
 
+## Framework Maintenance Mode
+
+The default rule is that agents using aegis treat framework files as read-only. An agent MAY modify `AGENTS.md`, `playbooks/`, `validate.py`, `harness/`, or derived framework docs only when the user explicitly asks to maintain or amend aegis itself, or when the user approves a framework amendment under `principles-gates.md` Amendment Protocol.
+
+When maintaining the aegis repository itself, `.agent-state/` is still the project-state template shipped to adopters. If the user requests a clean framework state, the maintainer agent MAY use transient notes during the session but MUST restore `.agent-state/` to template state before final verification. In that clean-release path, amendment evidence is recorded in `CHANGELOG.md`, validator output, review artifacts when retained, and commit/final-report evidence rather than in active adopter-facing ledgers.
+
 ## Workspace Discipline
 
 If a `_legacy/` directory exists, it is **read-only reference**: the agent MUST NOT edit it, and MUST NOT copy code from it without explicit redesign through the verdict process. The agent MAY refer to it for behavioral clues and edge cases, but MUST NOT treat it as a template.
 
-Framework files (`AGENTS.md`, `playbooks/`) are **read-only** for the agent. `.agent-state/` files are the project-state ledgers — the agent MUST read and update them normally. The Claude Code harness lives at `harness/claude-code/`. The discipline:
+Framework files (`AGENTS.md`, `playbooks/`) are **read-only** for governed-project agents except under Framework Maintenance Mode. `.agent-state/` files are the project-state ledgers — the agent MUST read and update them normally in governed projects. Harness templates live under `harness/` and are inactive until installed into their real harness load paths. The discipline:
 
-- **Canonical sources.** `harness/claude-code/settings.json` and `harness/claude-code/skills/` are the canonical shipped source locations. They MAY be configured by the human maintainer during project setup. Configuration changes themselves MUST be made by the human maintainer, not the agent.
-- **Activation.** `harness/claude-code/settings.json` is not active from file presence alone — it becomes active only when the maintainer installs or syncs it into Claude Code's real loaded settings path.
-- **Write denial.** When that loaded settings file is in use, it MUST deny the agent's direct Edit/Write/NotebookEdit writes to the canonical settings source.
+- **Canonical sources.** `harness/claude-code/settings.json`, `harness/claude-code/skills/`, `harness/codex/.codex/`, and `harness/codex/.agents/skills/` are shipped source/template locations. They MAY be configured by the human maintainer during project setup. Configuration changes to active harness settings themselves MUST be made by the human maintainer, not the governed-project agent.
+- **Activation.** A file under `harness/` is not active from file presence alone — it becomes active only when the maintainer installs or syncs it into the real loaded path for that harness.
+- **Write denial.** When an installed harness has an executable write-deny surface (for example Claude permissions or Codex hooks), it MUST deny the agent's direct Edit/Write/NotebookEdit writes to protected framework sources. Advisory-only harnesses MUST be paired with OS, git, or CI backstops before their guidance is counted as enforcement.
 - **Bash subprocess gap.** Settings-level write denial does not block Bash subprocess writes; shell-resistant protection still requires OS-level or hook backstops.
 - **Symlink coverage.** `CLAUDE.md` at the repo root is a symlink to `AGENTS.md` retained for Claude Code compatibility. Editing either path edits the same canonical file. The loaded Claude Code settings MUST deny writes to both patterns because symlink resolution is not guaranteed.
 - **Local overrides.** If a collaborator needs personal overrides (experiments or local preferences), they MUST use `AGENTS.local.md` (not checked in) rather than editing `AGENTS.md` — shared framework rules stay consistent for all collaborators.

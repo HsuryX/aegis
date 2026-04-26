@@ -1,27 +1,16 @@
 <!--
 SYNC-IMPACT
-- version: 1.0.0 → 1.1.0
+- version: 1.1.0 → 1.2.0
 - bump: MINOR
 - date: 2026-04-25
-- rationale: Framework refinement release. Adds the bounded-change 0 -> 3 path for already-governed work (`00-audit.md`); the harness security-claim model with explicit control-class (`Executable` / `Backstop` / `Advisory`) and activation-state (`Active now` / `Shipped but inactive` / `Not available here`) classification (`harness/capability-matrix.md`); the Canonical Dependency Edges DAG seeding the Whole-System Composition Check (`01-design.md`); the Adversarial Review Protocol Per-phase timing-hooks table (`principles-gates.md`); the Scope-Proportional gate-protocol mini-matrix (`principles-gates.md` Scope-Proportional Ceremony); the `phase regression` glossary entry; and `validate.py check_traceability` — a file-level `Implements:`/`Covers:` rollup (warning-only, vacuous on the framework repo itself). Extends Required Behaviors #7 with an archive-decay re-evaluation rule for consulted archive entries >= 12 months old (`principles.md`). Expands the existing Cold Read perspective with a concrete protocol (`principles-gates.md`). Adds a date-only UTC variant to the scope-reduction sign-off format for `micro`/`small` projects (`00-audit.md` ceremony matrix + `release-readiness.md` checklist); the full git-email anchored form remains for `standard`/`large`. Relaxes Session Start Protocol Step 3 — the integrity block now accepts any form that cites countable or tool-checkable evidence; the prior templated form is preserved as a reference example. Promotes the implementation-boundary rule to a dedicated `## Implementation Boundary` section in `AGENTS.md` (v1.0.0 carried the rule as a paragraph below the Phase Gates table); the new section's bounded-change summary paragraph points at `00-audit.md` for the full Bounded-Change Rule; surfaces additional Phase 1 gate items (Authority model, Whole-System Composition Check, threat-model applicability) and Phase 2 Proof-class declaration in the `AGENTS.md` Phase Gates table; decouples the Phase 1 threat-model gate from `specs/threat-model.md` artifact-existence (binds to whichever path D-5 declares); reformats the `AGENTS.md` Workspace Discipline second paragraph from a single run-on into a 6-bullet list (preserving v1.0.0 content and adding a Bash-subprocess-gap caveat); trims the scope-reduction marker phrase list (`validate.py` `_DEFERRAL_PHRASES`, mirrored in `standards.md` / `03-implement.md` / `harness/cursor/.cursor/rules/phase-3.mdc`) to unambiguous multi-word forms only, dropping false-positive-prone tokens. De-duplicates the Verdict Discipline definition (`AGENTS.md` is sole canonical owner; glossary holds a one-paragraph redirect); removes the four per-phase `## Adversarial Gate Check` stanzas (replaced by the new Per-phase timing-hooks table); removes the redundant placeholder grep at `02-spec.md` Quality Checks (the Phase Gate scan is a strict superset). Compresses Codex and Cursor harness READMEs by deferring universal-backstop guidance to `harness/capability-matrix.md`. Required Behaviors #8 grep formula relocates from `principles.md` body to `automation.md` Lessons-Gap Backstop. Removes the `validate.py` Verification Coverage Matrix anchor-diversity check; its enforcement contract is already covered by check 7 (evidence verifiability). SemVer MINOR — additive and refinement; no rule becomes stricter than v1.0.0 in a way that invalidates prior compliance.
+- rationale: Framework support-scope release; see CHANGELOG.md#v120 for the evidence and migration summary.
 - downstream_review_required:
-  - README.md
-  - ONBOARDING.md
   - CHANGELOG.md
-  - harness/capability-matrix.md
-  - harness/claude-code/README.md
-  - harness/codex/README.md
-  - harness/cursor/README.md
-  - harness/ci/README.md
-  - harness/claude-code/hooks-cookbook.md
-  - harness/claude-code/skills/phase-status/SKILL.md
-  - validate.py
-  - tools/bootstrap.sh
 -->
 ---
 id: playbooks/release-readiness
 title: Release Readiness Review
-version: 1.1.0
+version: 1.2.0
 last_reviewed: 2026-04-25
 applies_to:
   - phase: 3-implement
@@ -67,7 +56,7 @@ This playbook owns product ship safety only. It does **not** own semver classifi
 - [ ] **[M]** Every conformance criterion carries an `SC-{n}` label that cross-references `FR-` or `NFR-` on the same line. Mechanical: every `SC-\d+:` line MUST contain an `FR-` or `NFR-` reference.
 - [ ] **[M]** Every spec declaring a cross-trust-boundary interface has a non-empty Machine-readable Contract subsection. Mechanical: for every spec with `cross-trust-boundary` in its Scope section, `grep -cE '^\*\*schema:\*\*' specs/<spec>.md` MUST return ≥ 1 (or the spec MUST explicitly record `schema: N/A — internal only` with justification).
 - [ ] **[M]** Release-scope tests added or edited after adoption cite a path-qualified `specs/<spec>.md:SC-{n}` or `specs/<spec>.md:FR-{n}` in at least one of the two accepted per-test forms (test-name suffix or in-file `Covers:` comment). Mechanical: diff-guided inspection of touched post-adoption tests confirms an accepted form is present; `grep -rnE '^\s*(//|#)\s*Covers:\s*specs/[^ ,:]+\.md:(SC|FR)-[0-9]+|covers_[A-Za-z0-9_]+_(SC|FR)_[0-9]+' tests/ src/` returns ≥ the count of declared `SC-{n}` entries across all specs, and `python3 validate.py --product-ship` check 13 confirms set coverage on the fully qualified `specs/<spec>.md:SC-{n}` identifiers. Untouched pre-adoption tests remain exempt only when covered by the canonical `grandfathered` exception in `03-implement.md` / `gaps.md`.
-- [ ] **[M]** Every frontmatter block parses as valid YAML and carries all required fields (`id`, `title`, `version`, `last_reviewed`, `applies_to`, `severity`, `mechanical_items`, `judgment_items`, `mixed_items`, `references`, `supersedes`). Mechanical: `python3 validate.py --product-ship` exit 0 (product-ship mode preserves release-facing checks such as validator check #1 while skipping amendment-lane-only checks 17-18).
+- [ ] **[M]** Every frontmatter block parses as valid YAML and carries all required fields (`id`, `title`, `version`, `last_reviewed`, `applies_to`, `severity`, `mechanical_items`, `judgment_items`, `mixed_items`, `references`, `supersedes`). Mechanical: `python3 validate.py --product-ship` exit 0 (product-ship mode preserves release-facing checks such as validator check #1 while skipping amendment-lane-only checks 16-17).
 
 ### Gaps and deviations
 

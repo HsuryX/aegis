@@ -19,6 +19,8 @@ Checks:
   5. CLAUDE.md is a symlink to AGENTS.md
   6. Version agrees across: AGENTS.md frontmatter, AGENTS.md body banner,
      every playbook frontmatter, and the top versioned CHANGELOG section.
+  6a. AGENTS.md stays within the default 32 KiB operator-kernel budget unless
+      the framework deliberately changes that contract.
   7. Every Evidence cell in every Verification Coverage Matrix block in
      .agent-state/phase.md (+ phase-archive.md if present) carries a
      verifiable reference per playbooks/principles-gates.md Verification Coverage Matrix: file.md:N,
@@ -65,11 +67,14 @@ Checks:
       tests/ or src/. Set-based (not count-based) — prevents fake references
       from inflating counts.
 
- 14. Multi-agent lock-file validity: when .agent-state/.lock-decisions
+ 14. Traceability metric: file-level rollup over src/ and tests/ reports
+     Implements:/Covers: coverage ratio and warns below the threshold without
+     changing the validator exit code. Vacuous when src/ and tests/ are absent.
+ 15. Multi-agent lock-file validity: when .agent-state/.lock-decisions
      exists, it MUST contain 4 required fields (agent_id, acquired_at,
      expected_duration_minutes, purpose) and `acquired_at` MUST be within
      the last 24 hours. Vacuous for single-agent sessions (no lock).
- 15. Subsystem Ownership artifact placement: the validator MUST NOT
+ 16. Subsystem Ownership artifact placement: the validator MUST NOT
      broaden AGENTS.md applicability beyond its full AND-rule (scope
      standard/large AND >=2 subsystems AND >=3 distinct agents/team members).
      Because current state files do not encode those latter two counts
@@ -77,13 +82,14 @@ Checks:
      (`Subsystem Ownership: N/A` in .agent-state/gaps.md) and, when a local
      .agent-state/phase.md note is present, requires the canonical N/A note
      shape (single-agent form or predicate-labeled exemption reason).
- 16. SYNC-IMPACT format compliance: every framework file carrying a
+ 17. SYNC-IMPACT format compliance: every framework file carrying a
      `<!-- SYNC-IMPACT ... -->` HTML comment MUST have version (X.Y.Z →
      A.B.C), bump (MAJOR|MINOR|PATCH), date (YYYY-MM-DD), rationale, and
      downstream_review_required fields per principles-gates.md. Non-empty
      downstream_review_required entries MUST resolve to existing repo-
-     relative file paths. Catches format drift in future amendments.
- 17. Framework amendment evidence bundle: every session anchor in
+     relative file paths, and the full block MUST stay compact. Catches
+     format drift in future amendments.
+ 18. Framework amendment evidence bundle: every session anchor in
      `.agent-state/phase.md` that records a finite `#### Amendment evidence
      bundle` (or its canonical bundle-item markers) MUST satisfy the
      canonical pattern: authorization, semver + changed-file-set,
@@ -92,6 +98,9 @@ Checks:
      for semantic (MINOR/MAJOR) amendments. When such a review artifact is
      cited, its archive file MUST satisfy the key schema checks from
      `.agent-state/reviews/README.md`.
+ 19. Stale Codex harness claim scan: active guidance MUST NOT reintroduce
+      retired claims that Codex lacks hooks, skills, or session lifecycle
+      surfaces.
 
 check_7 (evidence verifiability) enforces full reference resolution:
 file.md:N must be within file length; file.md#anchor must resolve to an
@@ -105,7 +114,7 @@ Exit 0 on clean, non-zero with a bulleted failure list otherwise.
 Uses Python stdlib only — no external dependencies.
 
 `--product-ship` preserves the product-ship mechanical checks while skipping
-the amendment-lane-only checks 16-17 (SYNC-IMPACT format compliance and the
+the amendment-lane-only checks 17-18 (SYNC-IMPACT format compliance and the
 framework amendment evidence bundle).
 """
 
@@ -122,6 +131,7 @@ REPO_ROOT = Path(__file__).resolve().parent
 FAILURES: list[str] = []
 
 _LIFECYCLE_MODE_VALUES = {"finite-delivery", "steady-state"}
+AGENTS_MD_MAX_BYTES = 32 * 1024
 
 
 REQUIRED_FRONTMATTER_FIELDS = {
@@ -397,6 +407,28 @@ def check_version_consistency(files: list[Path]) -> None:
         fail(
             f"[6/version] CHANGELOG.md top version is {versioned[0]} "
             f"but AGENTS.md is {canonical}"
+        )
+
+
+def check_agents_instruction_budget() -> None:
+    """Keep AGENTS.md as a thin operator kernel.
+
+    Codex documents a default 32 KiB project-doc budget. Even outside Codex,
+    exceeding that budget is a design smell for aegis because the detailed
+    doctrine belongs in phase playbooks loaded by trigger, not in the always-on
+    kernel.
+    """
+    path = REPO_ROOT / "AGENTS.md"
+    try:
+        size = len(path.read_bytes())
+    except OSError as exc:
+        fail(f"[6a/agents-budget] AGENTS.md could not be read: {exc}")
+        return
+    if size > AGENTS_MD_MAX_BYTES:
+        fail(
+            f"[6a/agents-budget] AGENTS.md is {size} bytes; must stay <= "
+            f"{AGENTS_MD_MAX_BYTES} bytes unless every AGENTS-reading harness "
+            "is explicitly reconfigured and documented"
         )
 
 
@@ -920,6 +952,50 @@ def check_changelog_workflow_boundary() -> None:
         )
 
 
+# --- check_19: stale Codex harness claim scan ---------------------------
+
+_STALE_CODEX_CLAIM_PHRASES = (
+    "No hook equivalent",
+    "No skill commands",
+    "No SessionStart hook",
+    "Codex has no PreToolUse",
+    "Codex has no PostToolUse",
+    "Codex has no hooks",
+    "Codex has no skills",
+    "Codex does not have hooks",
+    "Codex does not have skills",
+)
+
+_STALE_CODEX_CLAIM_FILES = (
+    "README.md",
+    "ONBOARDING.md",
+    "harness/capability-matrix.md",
+    "harness/codex/README.md",
+    "harness/codex/config.toml.example",
+)
+
+
+def check_stale_codex_harness_claims() -> None:
+    """Reject active guidance that reintroduces pre-v1.2.0 Codex limitations.
+
+    Historical changelog entries are intentionally excluded; this scan protects
+    docs users rely on for current setup and capability claims.
+    """
+    for rel_path in _STALE_CODEX_CLAIM_FILES:
+        path = REPO_ROOT / rel_path
+        if not path.exists():
+            continue
+        text = path.read_text(encoding="utf-8", errors="replace")
+        for phrase in _STALE_CODEX_CLAIM_PHRASES:
+            for match in re.finditer(re.escape(phrase), text, re.IGNORECASE):
+                line_no = text.count("\n", 0, match.start()) + 1
+                fail(
+                    f"[19/codex-claims] {rel_path}:{line_no} contains stale "
+                    f"Codex capability claim {phrase!r}; classify current "
+                    "Codex support as shipped-but-inactive unless installed"
+                )
+
+
 # --- check_11: gap entry completeness (red-team #6) ----------------------
 
 _GAP_FULL_REQUIRED_FIELDS = (
@@ -1311,7 +1387,7 @@ def check_sc_coverage_set() -> None:
             f"tests/ or src/: {', '.join(sorted(missing))}"
         )
 
-# --- check_19: traceability metric (file-level rollup) -------------------
+# --- check_14: traceability metric (file-level rollup) -------------------
 
 _TRACEABILITY_SCAN_DIRS = (
     "src",
@@ -1376,7 +1452,7 @@ def check_traceability() -> None:
     pct = 100.0 * traced_files / total_files
     if pct < _TRACEABILITY_THRESHOLD_PCT:
         print(
-            f"[19/traceability] WARNING: {traced_files} of {total_files} scanned "
+            f"[14/traceability] WARNING: {traced_files} of {total_files} scanned "
             f"files in src/, tests/ carry Implements:/Covers: references "
             f"({pct:.1f}%); below the {_TRACEABILITY_THRESHOLD_PCT:.0f}% threshold. "
             f"Review trailer/comment coverage per playbooks/03-implement.md "
@@ -1390,7 +1466,7 @@ def check_traceability() -> None:
         )
 
 
-# --- check_14: multi-agent lock-file validity (red-team #5) --------------
+# --- check_15: multi-agent lock-file validity (red-team #5) --------------
 
 _LOCK_REQUIRED_FIELDS = ("agent_id", "acquired_at", "expected_duration_minutes", "purpose")
 
@@ -1487,7 +1563,7 @@ def _is_canonical_subsystem_ownership_note(line: str) -> bool:
     return bool(re.search(r'\([abc]\)', core))
 
 
-# --- check_15: Subsystem Ownership artifact placement (red-team #13) ------
+# --- check_16: Subsystem Ownership artifact placement (red-team #13) ------
 
 def check_subsystem_ownership_present() -> None:
     """Validate Subsystem Ownership artifact placement without broadening
@@ -1522,10 +1598,11 @@ def check_subsystem_ownership_present() -> None:
         )
 
 
-# --- check_16: SYNC-IMPACT format compliance (Phase E whole-project) ----
+# --- check_17: SYNC-IMPACT format compliance (Phase E whole-project) ----
 
 _SYNC_IMPACT_REQUIRED_FIELDS = ("version", "bump", "date", "rationale", "downstream_review_required")
 _SYNC_IMPACT_BUMP_VALUES = {"MAJOR", "MINOR", "PATCH"}
+_SYNC_IMPACT_MAX_LINES = 12
 
 
 def _is_valid_repo_relative_file_path(path_text: str) -> bool:
@@ -1599,6 +1676,13 @@ def check_sync_impact_format() -> None:
             fail(f"[17/sync-impact] {rel}: SYNC-IMPACT marker present but "
                  f"no matching `<!--\nSYNC-IMPACT ... -->` block found")
             continue
+        block_line_count = len(block.group(0).splitlines())
+        if block_line_count > _SYNC_IMPACT_MAX_LINES:
+            fail(
+                f"[17/sync-impact] {rel}: SYNC-IMPACT block has "
+                f"{block_line_count} lines; keep it <= {_SYNC_IMPACT_MAX_LINES} "
+                "lines and put release narrative in CHANGELOG.md"
+            )
         body = block.group(1)
 
         fields = _parse_sync_impact_fields(body)
@@ -2169,6 +2253,7 @@ def main(argv: list[str] | None = None) -> int:
     check_state_schemas()
     check_claude_symlink()
     check_version_consistency(files)
+    check_agents_instruction_budget()
     check_evidence_verifiability()
     check_derived_enumeration_parity()
     check_decision_alternatives_present()
@@ -2182,6 +2267,7 @@ def main(argv: list[str] | None = None) -> int:
     if not args.product_ship:
         check_sync_impact_format()
         check_framework_amendment_evidence_bundles()
+    check_stale_codex_harness_claims()
 
     if FAILURES:
         prefix = "validate.py (--product-ship)" if args.product_ship else "validate.py"
@@ -2196,7 +2282,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.product_ship:
         print(
             f"validate.py: all applicable checks passed "
-            f"(product-ship mode; skipped checks 17-18, AGENTS.md + {playbook_count} playbooks, version {version})"
+            f"(product-ship mode; skipped amendment-lane-only checks 17-18, AGENTS.md + {playbook_count} playbooks, version {version})"
         )
     else:
         print(
